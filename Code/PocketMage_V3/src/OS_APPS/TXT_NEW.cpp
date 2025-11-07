@@ -8,6 +8,8 @@
 
 #include <globals.h>
 #if !OTA_APP // POCKETMAGE_OS
+static constexpr const char* TAG = "TXT_NEWz";
+
 // Font includes
 // Mono
 #include <Fonts/FreeMono9pt7b.h>
@@ -1236,7 +1238,7 @@ void saveMarkdownFile(const String& path) {
     delay(3000);
     return;
   }
-
+  ESP_LOGE(TAG, "In save markdown file, setting cpu speed");
   SDActive = true;
   pocketmage::setCpuSpeed(240);
   delay(50);

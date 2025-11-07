@@ -320,13 +320,16 @@ void updateBattState() {
 // OTA_APP: Remove definition of saveEditingFile
 #if !OTA_APP
 void saveEditingFile() {
+
     if (!OTA_APP){
         OLED().oledWord("Saving Work");
         //pocketmage::file::saveFile();
         String savePath = SD().getEditingFile();
         if (savePath != "" && savePath != "-" && savePath != "/temp.txt" && fileLoaded) {
             if (!savePath.startsWith("/")) savePath = "/" + savePath;
+            ESP_LOGE(TAG, "Saving MarkdownFile");
             saveMarkdownFile(SD().getEditingFile());
+            ESP_LOGE(TAG, "Done saving MarkdownFile");
         }
     } 
 }
