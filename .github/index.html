@@ -470,6 +470,17 @@
             return CryptoJS.lib.WordArray.create(words, u8Array.length);
         }
 
+        // Helper: convert Uint8Array -> binary (Latin1) string in chunks (safe for large blobs)
+        function uint8ToBinaryString(u8) {
+            const CHUNK = 0x8000; // chunk size to avoid call stack limits
+            let result = '';
+            for (let i = 0; i < u8.length; i += CHUNK) {
+                const sub = u8.subarray(i, i + CHUNK);
+                result += String.fromCharCode.apply(null, sub);
+            }
+            return result;
+        }
+
         async function loadVersions() {
             try {
                 const response = await fetch('./manifest-index.json', { cache: 'no-store' });
@@ -558,7 +569,6 @@
                 // Connect and detect chip
                 const chip = await esploader.main();
                 console.debug('Detected chip:', chip);
-                // Don't hard-fail on non-ESP32-S3 here; just warn. The user may use other chips.
                 if (!chip) {
                     throw new Error('Failed to detect chip type');
                 }
@@ -613,8 +623,9 @@
                     // Full install - flash bootloader and partitions (if present)
                     if (firmwareFiles.bootloader && firmwareFiles.bootloader.path) {
                         const bootloaderU8 = await fetchUint8(`./firmware/${version}/${firmwareFiles.bootloader.path}`);
+                        // convert to binary string because older bundle versions expect binary strings
                         fileArray.push({
-                            data: bootloaderU8,
+                            data: uint8ToBinaryString(bootloaderU8),
                             address: firmwareFiles.bootloader.offset
                         });
                     } else {
@@ -624,7 +635,7 @@
                     if (firmwareFiles.partitions && firmwareFiles.partitions.path) {
                         const partitionsU8 = await fetchUint8(`./firmware/${version}/${firmwareFiles.partitions.path}`);
                         fileArray.push({
-                            data: partitionsU8,
+                            data: uint8ToBinaryString(partitionsU8),
                             address: firmwareFiles.partitions.offset
                         });
                     } else {
@@ -635,17 +646,17 @@
                 // Always flash the application
                 const appU8 = await fetchUint8(`./firmware/${version}/${firmwareFiles.application.path}`);
                 fileArray.push({
-                    data: appU8,
+                    data: uint8ToBinaryString(appU8),
                     address: firmwareFiles.application.offset
                 });
 
-                // Debug log sizes/offsets
+                // Debug log sizes/offsets; for binary strings length is still useful
                 console.debug('Prepared files for flashing:', fileArray.map(f => ({ address: f.address, length: f.data.length })));
 
                 statusDiv.textContent = 'Flashing firmware...';
 
                 // Flash the files using the correct API.
-                // esptool-js bundle accepts fileArray.data as Uint8Array in modern builds.
+                // Many esptool-js bundle versions expect file.data to be a binary (Latin1) string.
                 const flashOptions = {
                     fileArray: fileArray,
                     eraseAll: !preserveData, // Erase all for full install
@@ -655,20 +666,16 @@
                         progressFill.style.width = `${percent}%`;
                         progressText.textContent = `${percent}%`;
                     },
-                    // calculateMD5Hash may be called with a Uint8Array; convert to CryptoJS word array
-                    calculateMD5Hash: (imageUint8) => {
-                        // imageUint8 might already be a WordArray or string depending on bundle internals;
-                        // guard accordingly:
-                        if (!imageUint8) return null;
-                        if (imageUint8.constructor && imageUint8.constructor.name === 'WordArray') {
-                            return CryptoJS.MD5(imageUint8);
+                    // calculateMD5Hash: esptool-js often sends binary strings to this, so we expect a string and parse Latin1
+                    calculateMD5Hash: (image) => {
+                        if (!image) return null;
+                        // If image is Uint8Array for some bundle versions, convert
+                        if (image instanceof Uint8Array) {
+                            return CryptoJS.MD5(uint8ArrayToWordArray(image)).toString();
                         }
-                        if (imageUint8 instanceof Uint8Array) {
-                            return CryptoJS.MD5(uint8ArrayToWordArray(imageUint8)).toString();
-                        }
-                        // fallback: try converting string
+                        // If image is already a binary string, parse as Latin1
                         try {
-                            return CryptoJS.MD5(CryptoJS.enc.Latin1.parse(String(imageUint8))).toString();
+                            return CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)).toString();
                         } catch (e) {
                             console.warn('calculateMD5Hash fallback failed', e);
                             return null;
@@ -676,9 +683,6 @@
                     },
                 };
 
-                // Call writeFlash. If the bundle version expects binary strings instead of Uint8Array,
-                // the above may still work, but if you continue to get indexOf errors, try converting
-                // each file.data to a binary string (legacy browsers) and pass that instead.
                 await esploader.writeFlash(flashOptions);
 
                 // Clean up after flashing
@@ -692,9 +696,8 @@
 
             } catch (error) {
                 console.error('Flashing failed:', error);
-                // Common cause: manifest/paths missing (undefined.path), or writeFlash expecting a different data type.
-                // The "Cannot read properties of undefined (reading 'indexOf')" usually means some string was expected
-                // but an undefined value was passed (often a path or internal string operation).
+                // The indexOf error you saw is often triggered when a library expects a string (and uses .indexOf)
+                // but gets undefined or another type. Converting to a binary string above covers the common case.
                 statusDiv.textContent = `Flashing failed: ${error.message}`;
             } finally {
                 flashBtn.disabled = false;
