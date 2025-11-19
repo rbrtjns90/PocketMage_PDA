@@ -5,7 +5,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PocketMage Web Installer</title>
-    <script src="https://cdn.jsdelivr.net/npm/esptool-js@0.5.0/lib/index.js"></script>
+    <!-- Import map to resolve dependencies -->
+    <script type="importmap">
+    {
+        "imports": {
+            "esptool-js": "https://unpkg.com/esptool-js@0.5.0/bundle.js"
+        }
+    }
+    </script>
+    <!-- Import esptool-js with dependencies resolved -->
+    <script type="module">
+        import { ESPLoader } from "esptool-js";
+        
+        // Make ESPLoader available globally
+        window.ESPLoader = ESPLoader;
+    </script>
     <style>
         :root {
             --wp--preset--color--background: #fefef3;
@@ -389,7 +403,7 @@
 
         <div class="info-box">
             <strong>Installation Options</strong>
-            <p>When "Preserve user data" is checked, only the application partition will be flashed, keeping your settings and saved content.</p>
+            <p>When "Preserve user data" is checked, only application partition will be flashed, keeping your settings and saved content.</p>
             <p>When unchecked, a complete installation will be performed, which erases all data and settings.</p>
         </div>
 
@@ -420,6 +434,19 @@
         let firmwareFiles = {};
         let espLoader;
 
+        // Create terminal helper for esptool-js
+        const espLoaderTerminal = {
+            clean() {
+                console.clear();
+            },
+            writeLine(data) {
+                console.log(data);
+            },
+            write(data) {
+                console.log(data);
+            },
+        };
+
         async function loadVersions() {
             try {
                 const response = await fetch('./manifest-index.json', { cache: 'no-store' });
@@ -433,7 +460,7 @@
                     return;
                 }
 
-                // Load the first version to get the manifest structure
+                // Load first version to get the manifest structure
                 const firstVersion = data.versions[0];
                 const manifestResponse = await fetch(`./firmware/${firstVersion}/manifest.json`);
                 const manifest = await manifestResponse.json();
@@ -483,24 +510,26 @@
 
         async function initializeEspLoader() {
             try {
-                // Create a new ESP loader instance
-                espLoader = new ESPLoader({
-                    updateProgress: (fileIndex, progress, total) => {
-                        const percent = Math.round((progress / total) * 100);
-                        progressFill.style.width = `${percent}%`;
-                        progressText.textContent = `${percent}%`;
-                    },
-                    updateLog: (message) => {
-                        console.log(message);
-                    }
-                });
+                // Check if ESPLoader is available
+                if (typeof window.ESPLoader === 'undefined') {
+                    throw new Error('ESPLoader library not loaded. Please refresh the page.');
+                }
 
                 // Request serial port
                 const port = await navigator.serial.requestPort();
-                await espLoader.connect(port);
+                
+                // Create a new ESP loader instance with the terminal
+                espLoader = new window.ESPLoader({
+                    port: port,
+                    baudrate: 115200,
+                    terminal: espLoaderTerminal
+                });
+
+                // Connect to the device
+                await espLoader.main_fn();
 
                 // Detect chip type (should be ESP32-S3 for PocketMage)
-                const chipType = await espLoader.detectChip();
+                const chipType = await espLoader.chip;
                 if (chipType !== 'ESP32-S3') {
                     throw new Error(`Unsupported chip type: ${chipType}. This tool is designed for ESP32-S3.`);
                 }
@@ -566,14 +595,25 @@
                 statusDiv.textContent = 'Flashing firmware...';
 
                 // Flash the files
-                await espLoader.flashFiles(filesToFlash);
+                for (const file of filesToFlash) {
+                    const fileArray = new Uint8Array(file.data);
+                    await espLoader.write_flash({
+                        address: file.address,
+                        file: fileArray,
+                        progressCallback: (progress) => {
+                            const percent = Math.round(progress * 100);
+                            progressFill.style.width = `${percent}%`;
+                            progressText.textContent = `${percent}%`;
+                        }
+                    });
+                }
 
                 statusDiv.textContent = 'Firmware flashed successfully!';
                 progressFill.style.width = '100%';
                 progressText.textContent = '100%';
 
                 // Disconnect after successful flash
-                await espLoader.disconnect();
+                await espLoader.hard_reset();
             } catch (error) {
                 console.error('Flashing failed:', error);
                 statusDiv.textContent = `Flashing failed: ${error.message}`;
@@ -591,7 +631,16 @@
         preserveDataCheckbox.addEventListener('change', updateStatus);
         flashBtn.addEventListener('click', flashFirmware);
 
-        loadVersions();
+        // Wait for the ESPLoader to be loaded before initializing
+        window.addEventListener('load', () => {
+            // Check if ESPLoader is available
+            if (typeof window.ESPLoader === 'undefined') {
+                statusDiv.textContent = 'Error: ESPLoader library failed to load. Please refresh the page.';
+                return;
+            }
+            
+            loadVersions();
+        });
     </script>
 </body>
 
