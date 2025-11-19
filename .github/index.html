@@ -15,10 +15,11 @@
     </script>
     <!-- Import esptool-js with dependencies resolved -->
     <script type="module">
-        import { ESPLoader } from "esptool-js";
+        import { ESPLoader, Transport } from "esptool-js";
         
-        // Make ESPLoader available globally
+        // Make ESPLoader and Transport available globally
         window.ESPLoader = ESPLoader;
+        window.Transport = Transport;
     </script>
     <style>
         :root {
@@ -232,7 +233,7 @@
             cursor: pointer;
             box-shadow: 4px 4px 0 currentColor;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23353535' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23353535' d='M10.293 3.293L6 7.586 1.707 3.2...");
             background-repeat: no-repeat;
             background-position: right 1em center;
             background-size: 1em;
@@ -432,7 +433,8 @@
         const progressText = document.getElementById('progress-text');
 
         let firmwareFiles = {};
-        let espLoader;
+        let esploader;
+        let transport;
 
         // Create terminal helper for esptool-js
         const espLoaderTerminal = {
@@ -510,28 +512,29 @@
 
         async function initializeEspLoader() {
             try {
-                // Check if ESPLoader is available
-                if (typeof window.ESPLoader === 'undefined') {
+                // Check if ESPLoader and Transport are available
+                if (typeof window.ESPLoader === 'undefined' || typeof window.Transport === 'undefined') {
                     throw new Error('ESPLoader library not loaded. Please refresh the page.');
                 }
 
                 // Request serial port
                 const port = await navigator.serial.requestPort();
                 
+                // Create transport
+                transport = new window.Transport(port, true);
+
                 // Create a new ESP loader instance with the terminal
-                espLoader = new window.ESPLoader({
-                    port: port,
+                const flashOptions = {
+                    transport,
                     baudrate: 115200,
-                    terminal: espLoaderTerminal
-                });
+                    terminal: espLoaderTerminal,
+                };
+                esploader = new window.ESPLoader(flashOptions);
 
-                // Connect to the device
-                await espLoader.main_fn();
-
-                // Detect chip type (should be ESP32-S3 for PocketMage)
-                const chipType = await espLoader.chip;
-                if (chipType !== 'ESP32-S3') {
-                    throw new Error(`Unsupported chip type: ${chipType}. This tool is designed for ESP32-S3.`);
+                // Connect and detect chip
+                const chip = await esploader.main();
+                if (chip !== 'ESP32-S3') {
+                    throw new Error(`Unsupported chip type: ${chip}. This tool is designed for ESP32-S3.`);
                 }
 
                 return true;
@@ -565,55 +568,56 @@
                 statusDiv.textContent = 'Loading firmware files...';
 
                 // Determine which files to flash based on preserve data option
-                const filesToFlash = [];
+                const fileArray = [];
                 
                 if (!preserveData) {
-                    // Full install - flash bootloader and partitions
-                    const bootloaderFile = await fetch(`./firmware/${version}/${firmwareFiles.bootloader.path}`);
-                    const bootloaderArrayBuffer = await bootloaderFile.arrayBuffer();
-                    filesToFlash.push({
-                        data: bootloaderArrayBuffer,
+                    // Full install: flash bootloader and partitions
+                    const bootloaderResponse = await fetch(`./firmware/${version}/${firmwareFiles.bootloader.path}`);
+                    const bootloaderData = await bootloaderResponse.arrayBuffer();
+                    fileArray.push({
+                        data: bootloaderData,
                         address: firmwareFiles.bootloader.offset
                     });
 
-                    const partitionsFile = await fetch(`./firmware/${version}/${firmwareFiles.partitions.path}`);
-                    const partitionsArrayBuffer = await partitionsFile.arrayBuffer();
-                    filesToFlash.push({
-                        data: partitionsArrayBuffer,
+                    const partitionsResponse = await fetch(`./firmware/${version}/${firmwareFiles.partitions.path}`);
+                    const partitionsData = await partitionsResponse.arrayBuffer();
+                    fileArray.push({
+                        data: partitionsData,
                         address: firmwareFiles.partitions.offset
                     });
                 }
 
                 // Always flash the application
-                const appFile = await fetch(`./firmware/${version}/${firmwareFiles.application.path}`);
-                const appArrayBuffer = await appFile.arrayBuffer();
-                filesToFlash.push({
-                    data: appArrayBuffer,
+                const appResponse = await fetch(`./firmware/${version}/${firmwareFiles.application.path}`);
+                const appData = await appResponse.arrayBuffer();
+                fileArray.push({
+                    data: appData,
                     address: firmwareFiles.application.offset
                 });
 
                 statusDiv.textContent = 'Flashing firmware...';
 
-                // Flash the files
-                for (const file of filesToFlash) {
-                    const fileArray = new Uint8Array(file.data);
-                    await espLoader.write_flash({
-                        address: file.address,
-                        file: fileArray,
-                        progressCallback: (progress) => {
-                            const percent = Math.round(progress * 100);
-                            progressFill.style.width = `${percent}%`;
-                            progressText.textContent = `${percent}%`;
-                        }
-                    });
-                }
+                // Flash the files using the correct API
+                const flashOptions = {
+                    fileArray: fileArray,
+                    eraseAll: !preserveData, // Erase all for full install
+                    compress: true,
+                    reportProgress: (fileIndex, written, total) => {
+                        const percent = Math.round((written / total) * 100);
+                        progressFill.style.width = `${percent}%`;
+                        progressText.textContent = `${percent}%`;
+                    },
+                    calculateMD5Hash: (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
+                };
+                await esploader.writeFlash(flashOptions);
+
+                // Clean up after flashing
+                await esploader.after();
 
                 statusDiv.textContent = 'Firmware flashed successfully!';
                 progressFill.style.width = '100%';
                 progressText.textContent = '100%';
 
-                // Disconnect after successful flash
-                await espLoader.hard_reset();
             } catch (error) {
                 console.error('Flashing failed:', error);
                 statusDiv.textContent = `Flashing failed: ${error.message}`;
