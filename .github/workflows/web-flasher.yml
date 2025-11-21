@@ -246,19 +246,28 @@ jobs:
               mapfile -t old_dev_dirs < <(find "$TMP_DIR/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -printf '%f\n' | sort)
               old_dev_count=${#old_dev_dirs[@]}
               
+              # Get current version to exclude it from the copy (it's already in workspace)
+              CURRENT_VERSION="${{ steps.version.outputs.release_tag }}"
+              
               if [ "$old_dev_count" -gt 0 ]; then
-                # Calculate how many old devs to keep (last N in sorted order = newest N)
+                # We want to keep (KEEP_DEV_COUNT - 1) old versions since current is already there
+                keep_old_count=$(( KEEP_DEV_COUNT - 1 ))
                 start_index=0
-                if [ "$old_dev_count" -gt "$KEEP_DEV_COUNT" ]; then
-                  start_index=$(( old_dev_count - KEEP_DEV_COUNT ))
+                if [ "$old_dev_count" -gt "$keep_old_count" ]; then
+                  start_index=$(( old_dev_count - keep_old_count ))
                 fi
                 
-                echo "Found $old_dev_count existing dev versions, keeping last $KEEP_DEV_COUNT..."
+                echo "Found $old_dev_count existing dev versions, keeping last $keep_old_count old ones (+ current = $KEEP_DEV_COUNT total)..."
                 for i in $(seq "$start_index" $((old_dev_count - 1))); do
                   dev_name="${old_dev_dirs[$i]}"
-                  echo "  copying dev dir: $dev_name"
-                  rm -rf "$GITHUB_WORKSPACE/docs/firmware/$dev_name" || true
-                  cp -a "$TMP_DIR/docs/firmware/$dev_name" "$GITHUB_WORKSPACE/docs/firmware/$dev_name"
+                  # Skip if it's the current version (already in workspace from Scribe step)
+                  if [ "$dev_name" != "$CURRENT_VERSION" ]; then
+                    echo "  copying dev dir: $dev_name"
+                    rm -rf "$GITHUB_WORKSPACE/docs/firmware/$dev_name" || true
+                    cp -a "$TMP_DIR/docs/firmware/$dev_name" "$GITHUB_WORKSPACE/docs/firmware/$dev_name"
+                  else
+                    echo "  skipping current version (already in workspace): $dev_name"
+                  fi
                 done
               else
                 echo "No existing dev versions found in gh-pages"
@@ -275,18 +284,25 @@ jobs:
             fi
 
             # Prune dev-* firmware directories in workspace to keep only the newest KEEP_DEV_COUNT
+            # BUT we need to keep the current build + (KEEP_DEV_COUNT - 1) old ones = KEEP_DEV_COUNT total
             if [ -d "$GITHUB_WORKSPACE/docs/firmware" ]; then
-              echo "Final pruning: keeping only the newest $KEEP_DEV_COUNT dev-* directories..."
+              echo "Final pruning: keeping current build + $(( KEEP_DEV_COUNT - 1 )) old dev versions (total: $KEEP_DEV_COUNT)..."
               mapfile -t all_dev_dirs < <(find "$GITHUB_WORKSPACE/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -printf '%f\n' | sort)
               total_devs=${#all_dev_dirs[@]}
               
+              # We want to keep KEEP_DEV_COUNT total (including current build which is already in the list)
               if [ "$total_devs" -gt "$KEEP_DEV_COUNT" ]; then
                 to_remove=$(( total_devs - KEEP_DEV_COUNT ))
                 echo "Found $total_devs dev versions total; removing $to_remove oldest..."
                 for i in $(seq 0 $((to_remove - 1))); do
                   remove_name="${all_dev_dirs[$i]}"
-                  echo "  removing old dev dir: $remove_name"
-                  rm -rf "$GITHUB_WORKSPACE/docs/firmware/$remove_name" || true
+                  # Make sure we're not removing the current build
+                  if [ "$remove_name" != "$CURRENT_VERSION" ]; then
+                    echo "  removing old dev dir: $remove_name"
+                    rm -rf "$GITHUB_WORKSPACE/docs/firmware/$remove_name" || true
+                  else
+                    echo "  skipping current build: $remove_name"
+                  fi
                 done
               else
                 echo "Dev count ($total_devs) <= $KEEP_DEV_COUNT; nothing to prune."
