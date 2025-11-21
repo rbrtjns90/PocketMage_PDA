@@ -236,67 +236,80 @@ jobs:
                 cp -a "$dir" "$GITHUB_WORKSPACE/docs/firmware/$base"
               done || true
 
-              echo "Copying dev-* firmware directories from gh-pages into workspace docs/firmware..."
-              # Copy dev-* directories as well; we'll prune later to keep only the latest N
-              find "$TMP_DIR/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -print0 | while IFS= read -r -d '' dir; do
-                base=$(basename "$dir")
-                echo "  copying dev dir: $base"
-                rm -rf "$GITHUB_WORKSPACE/docs/firmware/$base" || true
-                cp -a "$dir" "$GITHUB_WORKSPACE/docs/firmware/$base"
-              done || true
+              echo "Identifying the newest $KEEP_DEV_COUNT dev-* versions from gh-pages..."
+              # Get all dev dirs from gh-pages, sort them (lexicographically newest last), keep last N
+              mapfile -t old_dev_dirs < <(find "$TMP_DIR/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -printf '%f\n' | sort)
+              old_dev_count=${#old_dev_dirs[@]}
+              
+              if [ "$old_dev_count" -gt 0 ]; then
+                # Calculate how many old devs to keep (last N in sorted order = newest N)
+                start_index=0
+                if [ "$old_dev_count" -gt "$KEEP_DEV_COUNT" ]; then
+                  start_index=$(( old_dev_count - KEEP_DEV_COUNT ))
+                fi
+                
+                echo "Found $old_dev_count existing dev versions, keeping last $KEEP_DEV_COUNT..."
+                for i in $(seq "$start_index" $((old_dev_count - 1))); do
+                  dev_name="${old_dev_dirs[$i]}"
+                  echo "  copying dev dir: $dev_name"
+                  rm -rf "$GITHUB_WORKSPACE/docs/firmware/$dev_name" || true
+                  cp -a "$TMP_DIR/docs/firmware/$dev_name" "$GITHUB_WORKSPACE/docs/firmware/$dev_name"
+                done
+              else
+                echo "No existing dev versions found in gh-pages"
+              fi
             fi
 
-            # Merge manifest-index.json: preserve old non-dev release entries and merge with current workspace index,
-            # and keep at most KEEP_DEV_COUNT dev-* entries (the newest ones).
-            if [ -f "$TMP_DIR/docs/manifest-index.json" ] && [ -f "$GITHUB_WORKSPACE/docs/manifest-index.json" ]; then
-              echo "Merging manifest-index.json from gh-pages with current workspace manifest-index.json (keeping last $KEEP_DEV_COUNT dev entries)..."
-              jq -s --argjson keep "$KEEP_DEV_COUNT" '
-                (.[0].versions // []) as $new |
-                (.[1].versions // []) as $old |
-                # old non-dev releases
-                ($old | map(select(startswith("dev-") | not))) as $old_releases |
-                # combine old+new to compute dev candidates
-                ($old + $new | map(select(startswith("dev-"))) | unique | sort) as $all_devs |
-                ($all_devs | reverse | .[0:$keep] | reverse) as $keep_devs |
-                # releases: old releases + new non-dev (new releases should be included)
-                (($old_releases) + ($new | map(select(startswith("dev-") | not)))) as $merged_releases |
-                ($merged_releases + $keep_devs) | unique | {versions: .}
-              ' "$GITHUB_WORKSPACE/docs/manifest-index.json" "$TMP_DIR/docs/manifest-index.json" > "$GITHUB_WORKSPACE/docs/manifest-index.json.merged" || true
-
-              if [ -f "$GITHUB_WORKSPACE/docs/manifest-index.json.merged" ]; then
-                mv "$GITHUB_WORKSPACE/docs/manifest-index.json.merged" "$GITHUB_WORKSPACE/docs/manifest-index.json"
-                echo "Merged manifest-index.json written."
-                cat "$GITHUB_WORKSPACE/docs/manifest-index.json"
-              fi
-            else
-              # If only the gh-pages manifest exists, but workspace doesn't, copy it
-              if [ -f "$TMP_DIR/docs/manifest-index.json" ] && [ ! -f "$GITHUB_WORKSPACE/docs/manifest-index.json" ]; then
-                echo "No workspace manifest-index.json present; preserving existing gh-pages manifest-index.json"
-                cp -a "$TMP_DIR/docs/manifest-index.json" "$GITHUB_WORKSPACE/docs/manifest-index.json"
-              fi
+            # Now handle the new version (current build) - if it's a dev version, we need to make room
+            CURRENT_VERSION="${{ github.event.release.tag_name }}"
+            if [ -z "$CURRENT_VERSION" ]; then
+              CURRENT_VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+            fi
+            
+            if [[ "$CURRENT_VERSION" == dev-* ]]; then
+              echo "Current build is a dev version ($CURRENT_VERSION), will ensure only $KEEP_DEV_COUNT total dev versions exist"
+              # After copying old devs, count total dev versions (including the new one about to be added)
+              # The new one is already in docs/firmware from the "Scribe the Firmware Manifest" step
             fi
 
             # Prune dev-* firmware directories in workspace to keep only the newest KEEP_DEV_COUNT
             if [ -d "$GITHUB_WORKSPACE/docs/firmware" ]; then
-              echo "Pruning dev-* directories in workspace to keep the newest $KEEP_DEV_COUNT..."
-              mapfile -t dev_dirs < <(find "$GITHUB_WORKSPACE/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -printf '%f\n' | sort)
-              total=${#dev_dirs[@]}
-              if [ "$total" -gt "$KEEP_DEV_COUNT" ]; then
-                to_remove=$(( total - KEEP_DEV_COUNT ))
-                echo "Found $total dev dirs; removing $to_remove oldest"
+              echo "Final pruning: keeping only the newest $KEEP_DEV_COUNT dev-* directories..."
+              mapfile -t all_dev_dirs < <(find "$GITHUB_WORKSPACE/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -printf '%f\n' | sort)
+              total_devs=${#all_dev_dirs[@]}
+              
+              if [ "$total_devs" -gt "$KEEP_DEV_COUNT" ]; then
+                to_remove=$(( total_devs - KEEP_DEV_COUNT ))
+                echo "Found $total_devs dev versions total; removing $to_remove oldest..."
                 for i in $(seq 0 $((to_remove - 1))); do
-                  name="${dev_dirs[$i]}"
-                  echo "  removing old dev dir: $name"
-                  rm -rf "$GITHUB_WORKSPACE/docs/firmware/$name" || true
+                  remove_name="${all_dev_dirs[$i]}"
+                  echo "  removing old dev dir: $remove_name"
+                  rm -rf "$GITHUB_WORKSPACE/docs/firmware/$remove_name" || true
                 done
               else
-                echo "Dev count ($total) <= $KEEP_DEV_COUNT; nothing to prune."
+                echo "Dev count ($total_devs) <= $KEEP_DEV_COUNT; nothing to prune."
               fi
             fi
 
+            # Rebuild manifest-index.json from what's actually in docs/firmware after pruning
+            echo "Rebuilding manifest-index.json based on actual firmware directories..."
+            # Get all release versions (non-dev)
+            mapfile -t release_versions < <(find "$GITHUB_WORKSPACE/docs/firmware" -maxdepth 1 -mindepth 1 -type d ! -name 'dev-*' -printf '%f\n' | sort -V -r)
+            # Get all dev versions (already sorted and pruned)
+            mapfile -t dev_versions < <(find "$GITHUB_WORKSPACE/docs/firmware" -maxdepth 1 -mindepth 1 -type d -name 'dev-*' -printf '%f\n' | sort -r)
+            
+            # Combine: dev versions first (newest first), then releases (newest first)
+            all_versions=("${dev_versions[@]}" "${release_versions[@]}")
+            
+            # Build JSON array
+            version_json=$(printf '%s\n' "${all_versions[@]}" | jq -R . | jq -s .)
+            echo "$version_json" | jq '{versions: .}' > "$GITHUB_WORKSPACE/docs/manifest-index.json"
+            
+            echo "Rebuilt manifest-index.json:"
+            cat "$GITHUB_WORKSPACE/docs/manifest-index.json"
+
             # Copy any other desired static assets from gh-pages that are not transient (optional)
-            # e.g., keep previously published logos or other static files if missing in workspace
-            for f in index.html logo.png favicon.png deploy-info.json manifest-index.json; do
+            for f in index.html logo.png favicon.png deploy-info.json; do
               if [ ! -f "$GITHUB_WORKSPACE/docs/$f" ] && [ -f "$TMP_DIR/docs/$f" ]; then
                 echo "Preserving existing $f from gh-pages"
                 cp -a "$TMP_DIR/docs/$f" "$GITHUB_WORKSPACE/docs/$f"
