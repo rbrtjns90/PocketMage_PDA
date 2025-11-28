@@ -170,7 +170,7 @@ void commandSelect(String command) {
 
 void drawHome() {
   EINK().resetDisplay();
-  
+
   int16_t x1, y1;
   uint16_t charWidth, charHeight;
   uint8_t appsPerRow = 5; // Number of apps per row

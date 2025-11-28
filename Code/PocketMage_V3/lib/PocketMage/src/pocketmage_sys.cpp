@@ -68,16 +68,13 @@ namespace pocketmage {
 
         if (isValid) {
             setCpuFrequencyMhz(newFreq);
-            ESP_LOGE(TAG, "CPU Speed changed to: %d MHz", newFreq);
+            ESP_LOGV(TAG, "CPU Speed changed to: %d MHz", newFreq);
         }
     }
 
     void deepSleep(bool alternateScreenSaver) {
         
-        // user skipped reboot flag if true, return to OS normally
-        if (!pocketmage::setRebootFlagOTA()) {
-            return;
-        }
+
 
         // Put OLED to sleep
         u8g2.setPowerSave(1);
@@ -87,6 +84,7 @@ namespace pocketmage {
             vTaskDelete(einkHandlerTaskHandle);
             einkHandlerTaskHandle = NULL;
         }
+
 
         // Shutdown Jingle
         BZ().playJingle(Jingles::Shutdown);
@@ -149,7 +147,9 @@ namespace pocketmage {
             EINK().refresh();
             delay(100);
         }
-
+        // essential to display next app correctly 
+        display.setFullWindow();
+        display.fillScreen(GxEPD_WHITE);
         // Put E-Ink to sleep
         display.hibernate();
 
@@ -158,7 +158,6 @@ namespace pocketmage {
         prefs.putInt("CurrentAppState", static_cast<int>(CurrentAppState));
         prefs.putString("editingFile", SD().getEditingFile());
         prefs.end();
-
         // Sleep the ESP32
         esp_deep_sleep_start();
     }
@@ -173,7 +172,7 @@ namespace pocketmage {
                 int j = millis();
                 while ((j - i) <= 3000) {  // 3 sec
                     // exit immediately if power button pressed again
-                    if (PWR_BTN_event || !disableTimeout){
+                    if (PWR_BTN_event){
                         ESP_LOGE(TAG, "Exiting setReboot continuing to returning true");
                         PWR_BTN_event = false;
                         break;
@@ -220,32 +219,35 @@ namespace pocketmage {
 }
 
 void PocketMage_INIT(){
+    pocketmage::checkRebootOTA();
   // Serial, I2C, SPI
   Serial.begin(115200);
   Wire.begin(I2C_SDA, I2C_SCL);
   SPI.begin(SPI_SCK, -1, SPI_MOSI, -1);
 
-  // OLED SETUP
-  setupOled();
-
-  // STARTUP JINGLE
-  setupBZ();
-  
   // WAKE INTERRUPT SETUP
   pinMode(KB_IRQ, INPUT);
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_8, 0);
   ESP_LOGE(TAG,"set wakeup pin"); 
-  // CHECK OTA REBOOT
-  pocketmage::checkRebootOTA();
-  ESP_LOGE(TAG,"checked ota reboot, proceeding to pocketmage os"); 
+
+  // OLED SETUP
+  setupOled();
+
+   if (!OTA_APP){
+    // SHOW "PocketMage" while DEVICE BOOTS
+    OLED().oledWord("   PocketMage   ", true, false);
+   }
+
   // KEYBOARD SETUP
   setupKB(KB_IRQ);
-
+  ESP_LOGD(TAG,"setup keyboard"); 
   // EINK HANDLER SETUP
   setupEink();
+  ESP_LOGD(TAG,"setup eink");  
   
   // SD CARD SETUP
   setupSD();
+  ESP_LOGD(TAG,"setup sd"); 
 
   // POWER SETUP
   pinMode(PWR_BTN, INPUT_PULLUP);
@@ -264,15 +266,20 @@ void PocketMage_INIT(){
   
   // CAPACATIVE TOUCH SETUP
   setupTouch();
-
+  ESP_LOGD(TAG,"setup touch"); 
   // RTC SETUP
   setupClock();
-
+  ESP_LOGD(TAG,"setup clock"); 
   // Set "random" seed
   randomSeed(analogRead(BAT_SENS));
 
   // Load State
   loadState();
+  ESP_LOGD(TAG,"loaded state"); 
+  
+  // STARTUP JINGLE
+  setupBZ();
+  ESP_LOGD(TAG,"setup buzzer"); 
 }
 
 // ===================== GLOBAL TEXT HELPERS =====================

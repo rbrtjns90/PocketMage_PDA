@@ -24,11 +24,11 @@ void printDebug() {
 void checkTimeout() {
     int randomScreenSaver = 0;
     CLOCK().setTimeoutMillis(millis());
-    ESP_LOGE(TAG,"checking timeout"); 
+    ESP_LOGV(TAG,"checking timeout"); 
     // Trigger timeout deep sleep
     if (!disableTimeout) {
         if (CLOCK().getTimeDiff() >= TIMEOUT * 1000) {
-            ESP_LOGE(TAG, "Device idle... Deep sleeping");
+            ESP_LOGD(TAG, "Device idle... Deep sleeping");
 
             // Give a chance to keep device awake
             OLED().oledWord("  Going to sleep!  ");
@@ -47,7 +47,13 @@ void checkTimeout() {
             // OTA_APP: Remove saveEditingFile
             // Save current work
             #if !OTA_APP
-            saveEditingFile();
+                saveEditingFile();
+            #else
+                // user skipped reboot flag if true, return to OS normally
+                if (!pocketmage::setRebootFlagOTA()) {
+                    return;
+                }
+                display.setFullWindow();
             #endif
 
             switch (CurrentAppState) {
@@ -125,7 +131,7 @@ void checkTimeout() {
         display.fillScreen(GxEPD_WHITE);
 
         } else {
-            ESP_LOGE(TAG,"Not charging");
+            ESP_LOGD(TAG,"Not charging");
             switch (CurrentAppState) {
                 // OTA_APP skip TXT case
                 case TXT:
@@ -248,7 +254,11 @@ void loadState(bool changeState) {
         case JOURNAL:
             JOURNAL_INIT();
             break;
+        default:
+            HOME_INIT();
+            break;
         }
+
     }
     #endif // POCKETMAGE_OS
     prefs.end();

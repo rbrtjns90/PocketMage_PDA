@@ -157,9 +157,9 @@ void loop() {
     if (!noTimeout)  checkTimeout();
     if (DEBUG_VERBOSE) printDebug();
 
-    PowerSystem.printDiagnostics();
+    if (DEBUG_VERBOSE) PowerSystem.printDiagnostics();
   #endif
-
+  
   updateBattState();
   processKB();
 

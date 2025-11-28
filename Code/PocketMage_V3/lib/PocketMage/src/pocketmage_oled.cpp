@@ -23,9 +23,6 @@ void setupOled() {
   u8g2.setPowerSave(0);
   u8g2.clearBuffer();
   u8g2.sendBuffer();
-
-  // SHOW "PocketMage" while DEVICE BOOTS
-  OLED().oledWord("   PocketMage   ", true, false);
 }
 
 // oled object reference for other apps
