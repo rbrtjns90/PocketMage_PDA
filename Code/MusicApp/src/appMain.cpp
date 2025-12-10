@@ -1,6 +1,6 @@
 // PocketMage V3.0 - Music App
 // Chiptune player and piano keyboard
-// @Ashtf 2025
+// @Rjones 2025
 
 #include <pocketmage.h>
 #include <Buzzer.h>
