@@ -154,10 +154,6 @@ void commandSelect(String command) {
     MUSICAPP_INIT();
   }
   /////////////////////////////
-  else if (command == "terminalapp") {
-    TERMINALAPP_INIT();
-  }
-  /////////////////////////////
   else if (command == "apps" || command == "launcher") {
     APPLAUNCHER_INIT();
   }
