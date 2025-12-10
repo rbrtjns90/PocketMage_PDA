@@ -22,14 +22,12 @@ extern void ASTRALUAAPP_INIT();
 extern void FLASHCARDAPP_INIT();
 extern void GLUCOSEAPP_INIT();
 extern void MUSICAPP_INIT();
-extern void TERMINALAPP_INIT();
 extern void STARTERAPP_INIT();
 
 // List of installed apps
 static AppEntry installedApps[] = {
     {"Hello World", "hello", "/apps/hello_icon.bin", HELLO_INIT},
     {"StarterApp", "starterapp", "/apps/starterapp_icon.bin", STARTERAPP_INIT},
-    {"TerminalApp", "terminalapp", "/apps/terminalapp_icon.bin", TERMINALAPP_INIT},
     {"MusicApp", "musicapp", "/apps/musicapp_icon.bin", MUSICAPP_INIT},
     {"GlucoseApp", "glucoseapp", "/apps/glucoseapp_icon.bin", GLUCOSEAPP_INIT},
     {"FlashCardApp", "flashcardapp", "/apps/flashcardapp_icon.bin", FLASHCARDAPP_INIT},
