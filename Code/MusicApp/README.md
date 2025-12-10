@@ -24,7 +24,7 @@ Play pre-loaded chiptune melodies:
 - **Adventure Theme** - Upbeat exploration music
 - **Victory Fanfare** - Triumphant short jingle
 - **Mystery Cave** - Eerie dungeon atmosphere
-- **Battle Ready** - Intense battle intro
+- **Battle Ready ;-) ** - Intense battle intro
 
 ## Controls
 
