@@ -59,29 +59,6 @@ if(APPLE)
 endif()
 
 # ---------------------------
-# ZSTD for ZIM decompression
-# ---------------------------
-find_package(PkgConfig QUIET)
-if(PkgConfig_FOUND)
-  pkg_check_modules(ZSTD QUIET libzstd)
-endif()
-
-if(NOT ZSTD_FOUND)
-  # Fallback: try to find zstd manually
-  find_library(ZSTD_LIBRARIES NAMES zstd)
-  find_path(ZSTD_INCLUDE_DIRS zstd.h)
-  if(ZSTD_LIBRARIES AND ZSTD_INCLUDE_DIRS)
-    set(ZSTD_FOUND TRUE)
-  endif()
-endif()
-
-if(ZSTD_FOUND)
-  message(STATUS "Found ZSTD: ${ZSTD_LIBRARIES}")
-else()
-  message(WARNING "ZSTD not found - ZIM article loading will be disabled")
-endif()
-
-# ---------------------------
 # PocketMage source paths
 # ---------------------------
 set(POCKETMAGE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../Code/PocketMage_V3)
@@ -92,10 +69,6 @@ set(POCKETMAGE_LIB ${POCKETMAGE_ROOT}/lib/PocketMage)
 set(POCKETMAGE_LIB_INCLUDE ${POCKETMAGE_LIB}/include)
 set(POCKETMAGE_LIB_SRC ${POCKETMAGE_LIB}/src)
 
-# WikiApp ZIM reader
-set(WIKIAPP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../Code/WikiApp)
-set(WIKIAPP_LIBZIM ${WIKIAPP_ROOT}/lib/libzim_esp32/src)
-
 # ---------------------------
 # PocketMage library source files
 # ---------------------------
@@ -103,12 +76,6 @@ set(WIKIAPP_LIBZIM ${WIKIAPP_ROOT}/lib/libzim_esp32/src)
 # The emulator provides its own implementations via pocketmage_shim.cpp
 set(POCKETMAGE_LIB_SOURCES
     ${POCKETMAGE_LIB_SRC}/libAssets.cpp
-)
-
-# WikiApp ZIM reader sources
-set(WIKIAPP_ZIM_SOURCES
-    ${WIKIAPP_LIBZIM}/zim_reader_esp32.cpp
-    ${WIKIAPP_LIBZIM}/packed_index_reader.cpp
 )
 
 # ---------------------------
@@ -128,7 +95,6 @@ set(POCKETMAGE_SOURCES
     ${POCKETMAGE_APPS}/JOURNAL.cpp
     ${POCKETMAGE_APPS}/LEXICON.cpp
     ${POCKETMAGE_SRC}/HELLO_WORLD.cpp
-    ${POCKETMAGE_SRC}/WIKIAPP_APP.cpp
     ${POCKETMAGE_SRC}/ASTRALUAAPP_APP.cpp
     ${POCKETMAGE_SRC}/FLASHCARDAPP_APP.cpp
     ${POCKETMAGE_SRC}/GLUCOSEAPP_APP.cpp
@@ -182,7 +148,6 @@ add_executable(${PROJECT_NAME}
     ${EMULATOR_SOURCES}
     ${POCKETMAGE_LIB_SOURCES}
     ${POCKETMAGE_SOURCES}
-    ${WIKIAPP_ZIM_SOURCES}
 )
 
 # Include directories - emulator includes MUST come first to override
@@ -198,8 +163,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/fonts/gfx  # Downloaded Adafruit GFX fonts
     ${POCKETMAGE_INCLUDE}
     ${POCKETMAGE_LIB_INCLUDE}
-    ${WIKIAPP_LIBZIM}  # ZIM reader headers
-    ${ZSTD_INCLUDE_DIRS}  # ZSTD headers
     ${LIBSSH_INCLUDE_DIRS}  # libssh headers
 )
 
@@ -237,12 +200,6 @@ if (TARGET SDL2::SDL2main)
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE ${_sdl_targets})
 
-# Link ZSTD for ZIM decompression
-if(ZSTD_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${ZSTD_LIBRARIES})
-  target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_ZSTD)
-endif()
-
 # Link libssh for SSH client
 if(LIBSSH_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBSSH_LIBRARIES})
@@ -252,23 +209,14 @@ endif()
 # ---------------------------
 # Post-build: copy assets
 # ---------------------------
-# Copy data directory (excluding large ZIM files)
+# Copy data directory
 if(EXISTS ${CMAKE_SOURCE_DIR}/data)
   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND rsync -a --exclude='*.zim' ${CMAKE_SOURCE_DIR}/data/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/data/
-    COMMENT "Copying data directory (excluding ZIM files)"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
+    COMMENT "Copying data directory"
     VERBATIM
   )
-  # Create symlink for ZIM file if it exists
-  if(EXISTS ${CMAKE_SOURCE_DIR}/data/wiki/wikipedia_en_all_maxi_2025-08.zim)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E create_symlink
-              ${CMAKE_SOURCE_DIR}/data/wiki/wikipedia_en_all_maxi_2025-08.zim
-              $<TARGET_FILE_DIR:${PROJECT_NAME}>/data/wiki/wikipedia_en_all_maxi_2025-08.zim
-      COMMENT "Creating symlink for ZIM file"
-      VERBATIM
-    )
-  endif()
 endif()
 
 # Copy fonts directory

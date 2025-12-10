@@ -1,4 +1,5 @@
 #include <globals.h>
+#include <esp_log.h> // Added for desktop emulator compatibility
 
 static constexpr const char* TAG = "CALENDAR"; // Tag for all calls to ESP_LOG
 
@@ -46,7 +47,7 @@ void updateEventArray() {
 
   File file = SD_MMC.open("/sys/events.txt", "r"); // Open the text file in read mode
   if (!file) {
-    ESP_LOGE(TAG, "Failed to open file for reading: %s", file.path());
+    ESP_LOGE(TAG, "Failed to open file for reading: %s", file.path().c_str()); // .c_str() needed for desktop emulator compatibility
     return;
   }
 

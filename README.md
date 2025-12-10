@@ -1,4 +1,6 @@
 # PocketMage PDA
+![Build Status](https://github.com/rbrtjns90/EinkPDA/actions/workflows/build.yml/badge.svg)
+
 [Please note that this project is a work in progress and incomplete]
 
 @Ashtf 2025

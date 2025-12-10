@@ -3,6 +3,7 @@
 # =========================
 external_libraries/
 desktop_emulator/build/
+desktop_emulator/IMPLEMENTATION_PLAN.md
 tools/IconEditor/build/
 
 # Wiki files (kept locally, not pushed to remote)
@@ -11,10 +12,6 @@ Wiki\ files/
 # Local app development folders
 Code/desktop_emulator/
 Code/WikiApp/
-Code/TerminalApp/
-Code/FlashCardApp/
-Code/GlucoseApp/
-Code/MusicApp/
 
 # =========================
 # macOS
@@ -29,22 +26,33 @@ Code/MusicApp/
 # =========================
 # C/C++ Build Artifacts
 # =========================
+# Compiled object files
 *.o
 *.obj
 *.lo
 *.slo
+
+# Precompiled headers
 *.gch
 *.pch
+
+# Compiled dynamic libraries
 *.so
 *.dylib
 *.dll
+
+# Compiled static libraries
 *.a
 *.lib
 *.la
 *.lai
+
+# Executables
 *.exe
 *.out
 *.app
+
+# Debug files
 *.dSYM/
 *.su
 *.idb
@@ -70,41 +78,64 @@ qrc_*.cpp
 # =========================
 # Python
 # =========================
+# Byte-compiled / optimized
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Virtual environments
 venv/
 ENV/
 env/
 .venv/
+
+# Distribution / packaging
 build/
 dist/
 *.egg-info/
 *.egg
 .eggs/
 *.whl
+
+# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Unit test / coverage
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 .nox/
+
+# Jupyter
 .ipynb_checkpoints/
+
+# mypy
 .mypy_cache/
 
 # =========================
 # IDEs and Editors
 # =========================
+# VS Code
 .vscode/
 *.code-workspace
+
+# JetBrains (PyCharm, CLion)
 .idea/
 *.iml
+
+# Vim
 *.swp
 *.swo
 *~
+
+# Emacs
+*~
 \#*\#
 .#*
+
+# Sublime Text
 *.sublime-project
 *.sublime-workspace
 

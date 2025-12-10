@@ -69,7 +69,7 @@ void updateTaskArray() {
   delay(50);
   File file = SD_MMC.open("/sys/tasks.txt", "r"); // Open the text file in read mode
   if (!file) {
-    ESP_LOGE(TAG, "Failed to open file to read: %s", file.path());
+    ESP_LOGE(TAG, "Failed to open file to read: %s", file.path().c_str()); // .c_str() needed for desktop emulator compatibility
     return;
   }
 

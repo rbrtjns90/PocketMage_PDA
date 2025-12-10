@@ -134,16 +134,40 @@ void commandSelect(String command) {
     JOURNAL_INIT();
   }
   /////////////////////////////
+  else if (command == "hello" || command == "hw" || command == "helloworld" || command == "0") {
+    HELLO_INIT();
+  }
+  /////////////////////////////
+  else if (command == "astraluaapp") {
+    ASTRALUAAPP_INIT();
+  }
+  /////////////////////////////
+  else if (command == "flashcardapp") {
+    FLASHCARDAPP_INIT();
+  }
+  /////////////////////////////
+  else if (command == "glucoseapp") {
+    GLUCOSEAPP_INIT();
+  }
+  /////////////////////////////
+  else if (command == "musicapp") {
+    MUSICAPP_INIT();
+  }
+  /////////////////////////////
+  else if (command == "terminalapp") {
+    TERMINALAPP_INIT();
+  }
+  /////////////////////////////
+  else if (command == "apps" || command == "launcher") {
+    APPLAUNCHER_INIT();
+  }
+  /////////////////////////////
   else if (command == "i farted") {
     OLED().oledWord("That smells");
     delay(1000);
   } 
   else if (command == "poop") {
     OLED().oledWord("Yuck");
-    delay(1000);
-  } 
-  else if (command == "hello") {
-    OLED().oledWord("Hey, you!");
     delay(1000);
   } 
   else if (command == "hi") {

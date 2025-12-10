@@ -43,7 +43,13 @@ extern volatile bool SDCARD_INSERT;  // SD card inserted event
 enum KBState { NORMAL, SHIFT, FUNC };    // Keyboard state
 
 // ===================== APP STATES =====================
-enum AppState { HOME, TXT, FILEWIZ, USB_APP, BT, SETTINGS, TASKS, CALENDAR, JOURNAL, LEXICON, APPLOADER };
+enum AppState { HOME, TXT, FILEWIZ, USB_APP, BT, SETTINGS, TASKS, CALENDAR, JOURNAL, LEXICON, APPLOADER, HELLO,
+    ASTRALUAAPP,
+    FLASHCARDAPP,
+    GLUCOSEAPP,
+    MUSICAPP,
+    TERMINALAPP,
+    STARTERAPP, APPLAUNCHER };
 extern const String appStateNames[];     // App state names
 extern const unsigned char *appIcons[11]; // App icons
 extern AppState CurrentAppState;         // Current app state
@@ -113,6 +119,52 @@ void processKB_APPLOADER();
 void einkHandler_APPLOADER();
 void rebootToAppSlot(int otaIndex);
 void loadAndDrawAppIcon(int x, int y, int otaIndex, bool showName = true, int maxNameChars = 10);
+
+// <HELLO_WORLD.cpp> - Example app for developers
+void HELLO_INIT();
+void processKB_HELLO();
+void einkHandler_HELLO();
+
+// ASTRALUAAPP App
+void ASTRALUAAPP_INIT();
+void processKB_ASTRALUAAPP();
+void einkHandler_ASTRALUAAPP();
+
+
+// FLASHCARDAPP App
+void FLASHCARDAPP_INIT();
+void processKB_FLASHCARDAPP();
+void einkHandler_FLASHCARDAPP();
+
+
+// GLUCOSEAPP App
+void GLUCOSEAPP_INIT();
+void processKB_GLUCOSEAPP();
+void einkHandler_GLUCOSEAPP();
+
+
+// MUSICAPP App
+void MUSICAPP_INIT();
+void processKB_MUSICAPP();
+void einkHandler_MUSICAPP();
+
+
+// TERMINALAPP App
+void TERMINALAPP_INIT();
+void processKB_TERMINALAPP();
+void einkHandler_TERMINALAPP();
+
+
+// STARTERAPP App
+void STARTERAPP_INIT();
+void processKB_STARTERAPP();
+void einkHandler_STARTERAPP();
+
+// APPLAUNCHER - Desktop Emulator App Launcher
+void APPLAUNCHER_INIT();
+void processKB_APPLAUNCHER();
+void einkHandler_APPLAUNCHER();
+
 
 // <PocketMage>
 void einkHandler(void *parameter); // moved from EinkFunc.cpp

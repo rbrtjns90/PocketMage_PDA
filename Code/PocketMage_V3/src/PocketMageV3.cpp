@@ -47,6 +47,36 @@ void applicationEinkHandler() {
     case APPLOADER:
       einkHandler_APPLOADER();
       break;
+    case HELLO:
+      einkHandler_HELLO();
+      break;
+
+        case ASTRALUAAPP:
+            einkHandler_ASTRALUAAPP();
+            break;
+
+        case FLASHCARDAPP:
+            einkHandler_FLASHCARDAPP();
+            break;
+
+        case GLUCOSEAPP:
+            einkHandler_GLUCOSEAPP();
+            break;
+
+        case MUSICAPP:
+            einkHandler_MUSICAPP();
+            break;
+
+        case TERMINALAPP:
+            einkHandler_TERMINALAPP();
+            break;
+
+        case STARTERAPP:
+            einkHandler_STARTERAPP();
+            break;
+        case APPLAUNCHER:
+            einkHandler_APPLAUNCHER();
+            break;
     // ADD APP CASES HERE
     default:
       einkHandler_HOME();
@@ -90,6 +120,36 @@ void processKB() {
     case APPLOADER:
       processKB_APPLOADER();
       break;
+    case HELLO:
+      processKB_HELLO();
+      break;
+
+        case ASTRALUAAPP:
+            processKB_ASTRALUAAPP();
+            break;
+
+        case FLASHCARDAPP:
+            processKB_FLASHCARDAPP();
+            break;
+
+        case GLUCOSEAPP:
+            processKB_GLUCOSEAPP();
+            break;
+
+        case MUSICAPP:
+            processKB_MUSICAPP();
+            break;
+
+        case TERMINALAPP:
+            processKB_TERMINALAPP();
+            break;
+
+        case STARTERAPP:
+            processKB_STARTERAPP();
+            break;
+        case APPLAUNCHER:
+            processKB_APPLAUNCHER();
+            break;
     // ADD APP CASES HERE
     default:
       processKB_HOME();

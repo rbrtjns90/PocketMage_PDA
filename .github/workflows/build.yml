@@ -1,0 +1,80 @@
+name: Build Desktop Emulator
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev cmake curl g++
+
+    - name: Build
+      run: |
+        cd desktop_emulator
+        ./build.sh
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: PocketMage-Emulator-linux
+        path: desktop_emulator/build-linux/PocketMage_Desktop_Emulator
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew install sdl2 sdl2_ttf cmake
+
+    - name: Build
+      run: |
+        cd desktop_emulator
+        ./build.sh
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: PocketMage-Emulator-macos
+        path: desktop_emulator/build-macos/PocketMage_Desktop_Emulator
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install vcpkg
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+        C:\vcpkg\bootstrap-vcpkg.bat
+
+    - name: Install SDL2 via vcpkg
+      run: |
+        C:\vcpkg\vcpkg install sdl2 sdl2-ttf:x64-windows
+
+    - name: Build
+      run: |
+        cd desktop_emulator
+        .\build.bat
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: PocketMage-Emulator-windows
+        path: |
+          desktop_emulator/build-windows/Release/PocketMage_Desktop_Emulator.exe
+          desktop_emulator/build-windows/Debug/PocketMage_Desktop_Emulator.exe
+          desktop_emulator/build-windows/PocketMage_Desktop_Emulator.exe

@@ -1,0 +1,5 @@
+/Users/rjones/Desktop/PocketMage Working/PocketMage_PDA-main/tools/IconEditor/build/CMakeFiles/IconEditor.dir
+/Users/rjones/Desktop/PocketMage Working/PocketMage_PDA-main/tools/IconEditor/build/CMakeFiles/edit_cache.dir
+/Users/rjones/Desktop/PocketMage Working/PocketMage_PDA-main/tools/IconEditor/build/CMakeFiles/rebuild_cache.dir
+/Users/rjones/Desktop/PocketMage Working/PocketMage_PDA-main/tools/IconEditor/build/CMakeFiles/IconEditor_autogen_timestamp_deps.dir
+/Users/rjones/Desktop/PocketMage Working/PocketMage_PDA-main/tools/IconEditor/build/CMakeFiles/IconEditor_autogen.dir
