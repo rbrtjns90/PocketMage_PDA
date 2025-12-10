@@ -1,0 +1,131 @@
+# =========================
+# Project-specific
+# =========================
+external_libraries/
+desktop_emulator/build/
+tools/IconEditor/build/
+
+# Wiki files (kept locally, not pushed to remote)
+Wiki\ files/
+
+# Local app development folders
+Code/desktop_emulator/
+Code/WikiApp/
+Code/TerminalApp/
+Code/FlashCardApp/
+Code/GlucoseApp/
+Code/MusicApp/
+Code/AstraLuaApp/
+
+# =========================
+# macOS
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# =========================
+# C/C++ Build Artifacts
+# =========================
+*.o
+*.obj
+*.lo
+*.slo
+*.gch
+*.pch
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.la
+*.lai
+*.exe
+*.out
+*.app
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CMakeScripts/
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Qt
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.moc
+*_autogen/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+env/
+.venv/
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.ipynb_checkpoints/
+.mypy_cache/
+
+# =========================
+# IDEs and Editors
+# =========================
+.vscode/
+*.code-workspace
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+\#*\#
+.#*
+*.sublime-project
+*.sublime-workspace
+
+# =========================
+# PlatformIO
+# =========================
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# =========================
+# Miscellaneous
+# =========================
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+core
+core.*
+*.bin
+*.zim

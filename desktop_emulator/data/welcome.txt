@@ -1,0 +1,7 @@
+# Welcome to PocketMage!
+
+This is the desktop emulator.
+
+You can type here to test the text editor.
+
+Press **Home** (key 12) to return to the main menu.

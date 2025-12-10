@@ -1,0 +1,51 @@
+# Build directory
+build/
+
+# External libraries (downloaded during build)
+external_libraries/
+
+# Implementation plan (internal dev notes)
+IMPLEMENTATION_PLAN.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+._*
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# User data (keep structure, ignore contents)
+data/*.txt
+data/sys/*.txt
+data/journal/*.txt
+data/dict/*.txt
+!data/.gitkeep
+!data/sys/.gitkeep
+!data/journal/.gitkeep
+
+# Preferences (generated at runtime)
+*.json
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
