@@ -39,7 +39,6 @@ if (NOT _sdl_config_ok)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(SDL2 REQUIRED sdl2)
   pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
-  pkg_check_modules(LIBSSH REQUIRED libssh)
 
   add_library(SDL2::SDL2 INTERFACE IMPORTED)
   target_include_directories(SDL2::SDL2 INTERFACE ${SDL2_INCLUDE_DIRS})
@@ -200,11 +199,6 @@ if (TARGET SDL2::SDL2main)
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE ${_sdl_targets})
 
-# Link libssh for SSH client
-if(LIBSSH_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBSSH_LIBRARIES})
-  target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_LIBSSH)
-endif()
 
 # ---------------------------
 # Post-build: copy assets
