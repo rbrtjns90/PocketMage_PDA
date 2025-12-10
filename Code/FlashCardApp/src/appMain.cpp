@@ -1,6 +1,6 @@
 // PocketMage V3.0 - FlashCard App
 // Load and study flashcards from CSV files
-// @R Jones2025
+// @Ashtf 2025
 
 #include <pocketmage.h>
 #include <vector>

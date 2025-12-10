@@ -1,6 +1,6 @@
 // PocketMage V3.0 - Glucose Tracker App
 // Blood glucose logging and tracking
-// @R Jones 2025
+// @Ashtf 2025
 
 #include <pocketmage.h>
 #include <vector>
