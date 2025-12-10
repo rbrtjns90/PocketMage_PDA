@@ -1,112 +1,115 @@
-# AstraLua 1.0
+# AstraLua 2.0
 
-A Lua-like interpreter / REPL for PocketMage.
+A full Lua 5.4 interpreter for PocketMage.
 
 ## Features
 
-- **Math expressions** - Full expression evaluator with proper operator precedence
-- **Variables** - Store and use numeric and string variables
-- **Built-in functions** - sin, cos, tan, sqrt, abs, log, floor, ceil
-- **Constants** - pi, e
-- **Control flow** - Simple for loops and if statements
-- **Print command** - Output strings and expressions
-- **Scrollable console** - View command history
+- **Full Lua 5.4** - Complete Lua interpreter using minilua
+- **Interactive REPL** - Execute Lua code line by line
+- **Script loading** - Load and run .lua files from SD card
+- **PocketMage bindings** - Access display, buzzer, and system functions
+- **Scrollable console** - View output history with Up/Down keys
+- **Word wrapping** - Long output automatically wraps
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `help` or `?` | Show help |
-| `vars` | List all variables |
-| `clear` or `cls` | Clear console |
-| `exit` or `quit` | Return to PocketMage OS |
+| `help` | Show help |
+| `clear` | Clear console |
+| `exit` | Return to PocketMage OS |
+| `load <file>` | Load and run a .lua file |
 
-## Math Operations
+## Lua Standard Library
 
-| Operator | Description |
-|----------|-------------|
-| `+` | Addition |
-| `-` | Subtraction |
-| `*` | Multiplication |
-| `/` | Division |
-| `^` | Power/Exponent |
-| `%` | Modulo |
+All standard Lua 5.4 functions are available:
 
-## Built-in Functions
+- **Math** - math.sin, math.cos, math.sqrt, math.abs, math.floor, math.ceil, math.random, etc.
+- **String** - string.sub, string.len, string.upper, string.lower, string.format, etc.
+- **Table** - table.insert, table.remove, table.sort, etc.
+- **I/O** - print, io.open, io.read, io.write (redirected to console)
 
-- `sin(x)` - Sine (radians)
-- `cos(x)` - Cosine (radians)
-- `tan(x)` - Tangent (radians)
-- `sqrt(x)` - Square root
-- `abs(x)` - Absolute value
-- `log(x)` - Natural logarithm
-- `floor(x)` - Round down
-- `ceil(x)` - Round up
+## PocketMage Bindings
 
-## Constants
+```lua
+-- Display
+pm.oled("Hello")       -- Show text on OLED
+pm.eink("Hello")       -- Show text on E-ink
 
-- `pi` - 3.14159265358979
-- `e` - 2.71828182845905
+-- Buzzer
+pm.beep()              -- Short beep
+pm.tone(440, 100)      -- Play 440Hz for 100ms
+
+-- System
+pm.delay(1000)         -- Delay 1 second
+pm.millis()            -- Get milliseconds since boot
+```
 
 ## Examples
 
 ### Basic Math
 ```lua
-2 + 2
-= 4
+print(2 + 2)
+-- 4
 
-10 * 5 + 3
-= 53
+print(math.sqrt(144))
+-- 12
 
-2 ^ 10
-= 1024
-
-sqrt(144)
-= 12
+print(math.pi * 2)
+-- 6.283185307179586
 ```
 
-### Variables
+### Variables and Functions
 ```lua
 x = 10
-x = 10
+y = 20
+print(x + y)
+-- 30
 
-y = x * 2 + 5
-y = 25
-
-sqrt(x^2 + y^2)
-= 26.9258
+function square(n)
+  return n * n
+end
+print(square(5))
+-- 25
 ```
 
-### Print
+### Loops
 ```lua
-print("Hello World")
-Hello World
+for i = 1, 5 do
+  print(i)
+end
+-- 1 2 3 4 5
 
-print(pi * 2)
-6.28319
+local sum = 0
+for i = 1, 100 do
+  sum = sum + i
+end
+print(sum)
+-- 5050
 ```
 
-### For Loop
+### Tables
 ```lua
-for i=1,5 do print(i) end
-> print(1)
-1
-> print(2)
-2
-...
+t = {10, 20, 30}
+for i, v in ipairs(t) do
+  print(i, v)
+end
+
+person = {name = "Alice", age = 30}
+print(person.name)
+-- Alice
 ```
 
-### If Statement
+### Loading Scripts
 ```lua
-x = 10
-if x then print("x is set") end
-x is set
+load bmi.lua
+-- Runs /lua/bmi.lua from SD card
 ```
 
 ## Controls
 
-- **Type** - Enter Lua-like commands
-- **ENTER** - Execute command
+- **Type** - Enter Lua code
+- **ENTER** - Execute code
 - **BACKSPACE** - Delete character
 - **Up/Down** - Scroll console history
 - **HOME** - Exit to PocketMage OS
@@ -125,10 +128,27 @@ cd desktop_emulator
 python3 install_app.py ../Code/AstraLuaApp
 ```
 
-## Future Enhancements
+## Script Location
 
-To add full Lua support:
-1. Add Lua source files to the project
-2. Include lua.h, lauxlib.h, lualib.h
-3. Replace the expression evaluator with luaL_dostring()
-4. Add PocketMage-specific Lua bindings (display, buzzer, etc.)
+Place .lua scripts in `/lua/` on the SD card.
+
+## Example Scripts
+
+The following demo scripts are included:
+
+### Math & Science
+- **`bmi.lua`** - Body Mass Index calculator. Calculates BMI from weight/height and shows health status.
+- **`circle.lua`** - Circle calculations. Computes circumference and area from radius.
+- **`distance.lua`** - Distance formula. Calculates distance between two points.
+- **`pythagoras.lua`** - Pythagorean theorem. Finds hypotenuse of a right triangle.
+- **`quadratic.lua`** - Quadratic formula solver. Solves ax² + bx + c = 0.
+- **`trig.lua`** - Trigonometry demo. Shows sin, cos, tan at various angles.
+
+### Finance
+- **`compound.lua`** - Compound interest calculator. Calculates future value of investments.
+- **`loan.lua`** - Loan payment calculator. Computes monthly payments, total paid, and interest.
+
+### Programming Examples
+- **`factorial.lua`** - Factorial calculator using a for loop.
+- **`squares.lua`** - Prints squares of numbers 1-10.
+- **`temperature.lua`** - Temperature conversion (Fahrenheit to Celsius).
