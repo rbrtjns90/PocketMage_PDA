@@ -98,7 +98,6 @@ set(POCKETMAGE_SOURCES
     ${POCKETMAGE_SRC}/FLASHCARDAPP_APP.cpp
     ${POCKETMAGE_SRC}/GLUCOSEAPP_APP.cpp
     ${POCKETMAGE_SRC}/MUSICAPP_APP.cpp
-    ${POCKETMAGE_SRC}/TERMINALAPP_APP.cpp
     ${POCKETMAGE_SRC}/StarterApp_APP.cpp      # Example app - see docs/APP_DEVELOPMENT.md
     ${POCKETMAGE_APPS}/APPLAUNCHER.cpp        # Desktop emulator app launcher
     # ========================================
