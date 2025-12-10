@@ -67,10 +67,6 @@ void applicationEinkHandler() {
             einkHandler_MUSICAPP();
             break;
 
-        case TERMINALAPP:
-            einkHandler_TERMINALAPP();
-            break;
-
         case STARTERAPP:
             einkHandler_STARTERAPP();
             break;
@@ -138,10 +134,6 @@ void processKB() {
 
         case MUSICAPP:
             processKB_MUSICAPP();
-            break;
-
-        case TERMINALAPP:
-            processKB_TERMINALAPP();
             break;
 
         case STARTERAPP:

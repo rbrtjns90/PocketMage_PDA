@@ -48,7 +48,6 @@ enum AppState { HOME, TXT, FILEWIZ, USB_APP, BT, SETTINGS, TASKS, CALENDAR, JOUR
     FLASHCARDAPP,
     GLUCOSEAPP,
     MUSICAPP,
-    TERMINALAPP,
     STARTERAPP, APPLAUNCHER };
 extern const String appStateNames[];     // App state names
 extern const unsigned char *appIcons[11]; // App icons
@@ -147,12 +146,6 @@ void einkHandler_GLUCOSEAPP();
 void MUSICAPP_INIT();
 void processKB_MUSICAPP();
 void einkHandler_MUSICAPP();
-
-
-// TERMINALAPP App
-void TERMINALAPP_INIT();
-void processKB_TERMINALAPP();
-void einkHandler_TERMINALAPP();
 
 
 // STARTERAPP App
