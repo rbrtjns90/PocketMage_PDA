@@ -9,9 +9,17 @@
 #include "pocketmage_compat.h"
 #include "Adafruit_GFX.h"
 
+// Linux build: Use same approach as Windows (extern const definitions here, extern declarations in headers)
+// macOS build: Uses inline definitions in headers (clang handles this correctly)
+#if defined(_WIN32) || defined(__LINUX__) || defined(__linux__)
+
 #ifdef _WIN32
 #pragma message("gfx_fonts.cpp: Compiling Windows font definitions")
-// Windows: Define stub fonts with extern const for external linkage
+#else
+#pragma message("gfx_fonts.cpp: Compiling Linux font definitions")
+#endif
+
+// Windows/Linux: Define stub fonts with extern const for external linkage
 // (const at file scope has internal linkage by default in C++)
 // The actual font data is not used since SDL2_ttf handles text rendering
 extern const GFXfont FreeMono9pt7b = {nullptr, nullptr, 0, 0, 16};
@@ -54,7 +62,7 @@ extern const GFXfont Font3x7FixedNum = {nullptr, nullptr, 0, 0, 10};
 extern const GFXfont Font4x5Fixed = {nullptr, nullptr, 0, 0, 8};
 
 #else
-// macOS/Linux: provide stub font definitions
+// macOS: provide stub font definitions (inline from headers works with clang)
 GFXfont FreeMono9pt7b = {nullptr, nullptr, 0, 0, 16};
 GFXfont FreeMono12pt7b = {nullptr, nullptr, 0, 0, 20};
 GFXfont FreeMonoBold9pt7b = {nullptr, nullptr, 0, 0, 16};
