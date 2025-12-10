@@ -82,14 +82,27 @@ class FirmwareReleaseManager:
             # Keep only the newest ones (sorted list, take from end)
             dev_dirs_to_keep = dev_dirs[-keep_count:] if keep_count > 0 else []
             
-            for dev_dir in dev_dirs_to_keep:
-                if dev_dir != current_version:  # Don't copy current version (already in workspace)
+            for dev_dir in dev_dirs_to_keep: 
+                if dev_dir != current_version: # Don't copy current version (already in workspace)
                     print(f"  Preserving dev build: {dev_dir}")
                     src = gh_firmware / dev_dir
                     dst = self.firmware_dir / dev_dir
                     if dst.exists():
                         shutil.rmtree(dst)
                     shutil.copytree(src, dst)
+    
+    def _safe_version_sort_key(self, version_str: str):
+        """
+        Create a sort key for version strings.
+        Tries to parse as PEP 440 version first, falls back to string comparison.
+        Returns a tuple (is_valid_pep440, sort_key) to group valid versions first.
+        """
+        try:
+            from packaging import version
+            return (0, version.parse(version_str))
+        except Exception:
+            # For non-PEP 440 versions, use lowercase string for consistent sorting
+            return (1, version_str.lower())
     
     def rebuild_manifest_index(self):
         """Rebuild manifest-index.json from actual firmware directories."""
@@ -106,13 +119,8 @@ class FirmwareReleaseManager:
             # Sort: dev versions newest first, then releases newest first (using version sort)
             dev_versions.sort(reverse=True)
             
-            # For releases, try to sort by version number
-            try:
-                from packaging import version
-                release_versions.sort(key=lambda x: version.parse(x), reverse=True)
-            except ImportError:
-                # Fallback to simple reverse sort if packaging not available
-                release_versions.sort(reverse=True)
+            # For releases, try to sort by version number with fallback for non-standard versions
+            release_versions.sort(key=self._safe_version_sort_key, reverse=True)
             
             # Combine: dev first, then releases
             versions = dev_versions + release_versions
@@ -167,5 +175,5 @@ def main():
     )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     main()
