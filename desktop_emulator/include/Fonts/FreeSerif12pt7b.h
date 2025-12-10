@@ -1,13 +1,10 @@
 #pragma once
 
-// Debug: This header is from desktop_emulator/include/Fonts/
-#ifdef _WIN32
-#pragma message("FreeSerif12pt7b.h: Using Windows extern declaration")
-#endif
-
 #include <Adafruit_GFX.h>
 
-#ifdef _WIN32
+// Windows and Linux: extern declaration (definition in gfx_fonts.cpp)
+// macOS: inline definition (clang handles this correctly)
+#if defined(_WIN32) || defined(__LINUX__) || defined(__linux__)
 // Windows: Use extern declaration - definition is in gfx_fonts.cpp
 extern const GFXfont FreeSerif12pt7b;
 #else

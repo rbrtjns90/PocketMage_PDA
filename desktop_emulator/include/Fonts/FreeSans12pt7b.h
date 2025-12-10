@@ -1,8 +1,9 @@
 #pragma once
 #include <Adafruit_GFX.h>
 
-#ifdef _WIN32
-// Windows: Use extern declaration - definition is in gfx_fonts.cpp
+// Windows and Linux: extern declaration (definition in gfx_fonts.cpp)
+// macOS: inline definition (clang handles this correctly)
+#if defined(_WIN32) || defined(__LINUX__) || defined(__linux__)
 extern const GFXfont FreeSans12pt7b;
 #else
 inline const uint8_t FreeSans12pt7bBitmaps[] PROGMEM = {
