@@ -94,10 +94,10 @@ set(POCKETMAGE_SOURCES
     ${POCKETMAGE_APPS}/JOURNAL.cpp
     ${POCKETMAGE_APPS}/LEXICON.cpp
     ${POCKETMAGE_SRC}/HELLO_WORLD.cpp
-    ${POCKETMAGE_SRC}/ASTRALUAAPP_APP.cpp
-    ${POCKETMAGE_SRC}/FLASHCARDAPP_APP.cpp
-    ${POCKETMAGE_SRC}/GLUCOSEAPP_APP.cpp
-    ${POCKETMAGE_SRC}/MUSICAPP_APP.cpp
+    ${POCKETMAGE_SRC}/AstraLuaApp_APP.cpp
+    ${POCKETMAGE_SRC}/FlashCardApp_APP.cpp
+    ${POCKETMAGE_SRC}/GlucoseApp_APP.cpp
+    ${POCKETMAGE_SRC}/MusicApp_APP.cpp
     ${POCKETMAGE_SRC}/StarterApp_APP.cpp      # Example app - see docs/APP_DEVELOPMENT.md
     ${POCKETMAGE_APPS}/APPLAUNCHER.cpp        # Desktop emulator app launcher
     # ========================================
