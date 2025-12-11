@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-linux:
+  build-ubuntu:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,12 +21,36 @@ jobs:
     - name: Build
       run: |
         cd desktop_emulator
-        ./build.sh
+        chmod +x build-mac-deb.sh
+        ./build-mac-deb.sh
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: PocketMage-Emulator-linux
+        name: PocketMage-Emulator-ubuntu
+        path: desktop_emulator/build-linux/PocketMage_Desktop_Emulator
+
+  build-fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        dnf install -y SDL2-devel SDL2_ttf-devel cmake gcc-c++ curl
+
+    - name: Build
+      run: |
+        cd desktop_emulator
+        chmod +x build-red-hat.sh
+        ./build-red-hat.sh
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: PocketMage-Emulator-fedora
         path: desktop_emulator/build-linux/PocketMage_Desktop_Emulator
 
   build-macos:
@@ -42,13 +66,14 @@ jobs:
     - name: Build
       run: |
         cd desktop_emulator
-        ./build.sh
+        chmod +x build-mac-deb.sh
+        ./build-mac-deb.sh
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: PocketMage-Emulator-macos
-        path: desktop_emulator/build-macos/PocketMage_Desktop_Emulator
+        path: desktop_emulator/build/PocketMage_PDA_Emulator
 
   build-windows:
     runs-on: windows-latest
