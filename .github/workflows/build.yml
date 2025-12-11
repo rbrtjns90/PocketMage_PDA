@@ -81,6 +81,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install build tools
+      run: |
+        choco install ninja cmake -y
+
     - name: Install vcpkg
       run: |
         git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
@@ -88,6 +92,7 @@ jobs:
 
     - name: Install SDL2 via vcpkg
       run: |
+        $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
         C:\vcpkg\vcpkg install sdl2 sdl2-ttf:x64-windows
 
     - name: Build
