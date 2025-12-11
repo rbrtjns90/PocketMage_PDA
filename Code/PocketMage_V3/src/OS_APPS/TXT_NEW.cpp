@@ -49,7 +49,7 @@
 #include "esp_log.h"
 
 // ------------------ General ------------------
-enum TXTState_NEW { TXT_, FONT, SAVE_AS, LOAD_FILE };
+enum TXTState_NEW { TXT_, FONT, SAVE_AS, LOAD_FILE, JOURNAL_MODE };
 TXTState_NEW CurrentTXTState_NEW = TXT_;
 
 #define TYPE_INTERFACE_TIMEOUT 5000  // ms
@@ -650,66 +650,7 @@ int displayDocumentPreview(int startX = 0, int startY = 0) {
   // Return total height used
   return cursorY - startY;
 }
-/* //migrated to pocketmage_touch.h
-// Scroll
-void updateScroll() {
-  const char* tag = "TOUCH";
-  static int lastTouchPos = -1;
-  static unsigned long lastTouchTime = 0;
-  static int prev_lineScroll = 0;
 
-  uint16_t touched = cap.touched();  // Read touch state
-  int touchPos = -1;
-
-  // Find the first active touch point (lowest index first)
-  for (int i = 0; i < 9; i++) {
-    if (touched & (1 << i)) {
-      touchPos = i;
-
-      ESP_LOGI(tag, "Prev pad: %d\tTouched pad: \n", lastTouchPos,
-               touchPos);  // TODO(logging): come up with more descriptive tags
-
-      break;
-    }
-  }
-
-  unsigned long currentTime = millis();
-
-  if (touchPos != -1) {  // If a touch is detected
-    ESP_LOGI(tag, "Touch detected\n");
-
-    if (lastTouchPos != -1) {  // Compare with previous touch
-      int touchDelta = abs(touchPos - lastTouchPos);
-      if (touchDelta <= 2) {  // Ignore large jumps
-        int maxScroll = getTotalDisplayLines();
-
-        // REVERSED SCROLL DIRECTION:
-        if (touchPos < lastTouchPos && lineScroll < maxScroll) {
-          prev_lineScroll = lineScroll;
-          lineScroll++;
-        } else if (touchPos > lastTouchPos && lineScroll > 0) {
-          prev_lineScroll = lineScroll;
-          lineScroll--;
-        }
-      }
-    }
-
-    lastTouchPos = touchPos;      // update tracked touch
-    lastTouch = touchPos;         // <--- update UI flag
-    lastTouchTime = currentTime;  // reset timeout
-  } else if (lastTouchPos != -1 && (currentTime - lastTouchTime > TOUCH_TIMEOUT_MS)) {
-    // Timeout: reset both
-    lastTouchPos = -1;
-    lastTouch = -1;  // <--- reset UI flag
-
-    if (prev_lineScroll != lineScroll) {
-      updateScreen = true;
-    }
-
-    prev_lineScroll = lineScroll;
-  }
-}
-*/
 bool lineHasText(const LineObject& lineObj) {
   // Check if line has any words
   if (lineObj.words.empty())
@@ -1353,8 +1294,12 @@ void editAppend(char inchar) {
   if (inchar == 0) {
   }
   // Return home
-  else if (inchar == 12) {
+  else if (inchar == 12 && CurrentTXTState_NEW != JOURNAL_MODE) {
     HOME_INIT();
+  }
+  // Return to journal app if in journal mode
+  else if (inchar == 12 && CurrentTXTState_NEW == JOURNAL_MODE) {
+    JOURNAL_INIT();
   }
   // TAB Recieved
   else if (inchar == 9) {
@@ -1566,7 +1511,7 @@ void editAppend(char inchar) {
     }
   }
   // SAVE Recieved
-  else if (inchar == 6) {
+  else if (inchar == 6 && CurrentTXTState_NEW != JOURNAL_MODE) {
     String savePath = SD().getEditingFile();
     if (savePath == "" || savePath == "-" || savePath == "/temp.txt") {
       KB().setKeyboardState(NORMAL);
@@ -1575,13 +1520,27 @@ void editAppend(char inchar) {
     }
     if (!savePath.startsWith("/")) savePath = "/" + savePath;
     
-    saveMarkdownFile(SD().getEditingFile());
+    saveMarkdownFile(savePath);
   }
-  // FILE Recieved
-  else if (inchar == 7) {
+  // Journal save
+  else if (inchar == 6 && CurrentTXTState_NEW == JOURNAL_MODE) {
+    String savePath = getCurrentJournal();
+    if (!savePath.startsWith("/")) savePath = "/" + savePath;
+    saveMarkdownFile(savePath);
+  }
+
+  // FILE recieved
+  else if (inchar == 7 && CurrentTXTState_NEW != JOURNAL_MODE) {
     CurrentTXTState_NEW = LOAD_FILE;
     KB().setKeyboardState(NORMAL);
   }
+  // Journal load
+  else if (inchar == 7 && CurrentTXTState_NEW == JOURNAL_MODE) {
+    String outPath = getCurrentJournal();
+    if (!outPath.startsWith("/")) outPath = "/" + outPath;
+    loadMarkdownFile(outPath);
+  }
+
   // Font Switcher
   else if (inchar == 14) {
     CurrentTXTState_NEW = FONT;
@@ -1633,8 +1592,7 @@ void editAppend(char inchar) {
       lineScroll = editingDocLine.lines.back().index;
   }
 
-  if (SAVE_POWER)
-    setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
 }
 
 // INIT
@@ -1758,6 +1716,22 @@ void TXT_INIT() {
   lineScroll = 0;
   updateScreen = true;
   CurrentAppState = TXT;
+  CurrentTXTState_NEW = TXT_;
+}
+
+void TXT_INIT_JournalMode() {
+  initFonts();
+
+  String outPath = getCurrentJournal();
+  if (!outPath.startsWith("/")) outPath = "/" + outPath;
+  loadMarkdownFile(outPath);
+
+  setFontStyle(serif);
+
+  lineScroll = 0;
+  updateScreen = true;
+  CurrentAppState = TXT;
+  CurrentTXTState_NEW = JOURNAL_MODE;
 }
 
 void einkHandler_TXT_NEW() {
@@ -1785,6 +1759,23 @@ void processKB_TXT_NEW() {
 
   switch (CurrentTXTState_NEW) {
     case TXT_:
+      inchar = KB().updateKeypress();
+      if (currentMillis - KBBounceMillis >= KB_COOLDOWN) {
+        // update scroll
+        if (TOUCH().updateScroll(getTotalDisplayLines(), lineScroll)) {
+          updateScreen = true;
+        }
+        switch (currentEditMode) {
+          case edit_append:
+            editAppend(inchar);
+            break;
+          case edit_inline:
+
+            break;
+        }
+      }
+      break;
+    case JOURNAL_MODE: // Stripped down version of TXT_ for journal
       inchar = KB().updateKeypress();
       if (currentMillis - KBBounceMillis >= KB_COOLDOWN) {
         // update scroll

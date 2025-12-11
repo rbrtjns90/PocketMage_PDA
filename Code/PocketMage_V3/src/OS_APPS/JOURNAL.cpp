@@ -28,6 +28,8 @@ void saveJournal() {
   pocketmage::file::saveFile();
 }
 
+String getCurrentJournal() {return currentJournal;}
+
 // Functions
 bool isLeapYear(int year) {
   return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
@@ -166,16 +168,11 @@ void JMENUCommand(String command) {
 
     currentJournal = fileName;
 
-    // Load file
-    SD().setEditingFile(currentJournal);
-    loadJournal();
-
-    TOUCH().setDynamicScroll(0);
-    newLineAdded = true;
-    CurrentJournalState = J_TXT;
-
     if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
     SDActive = false;
+    // Load file
+    TXT_INIT_JournalMode();
+    
     return;
   }
 
@@ -190,16 +187,11 @@ void JMENUCommand(String command) {
 
     currentJournal = fileName;
 
-    // Load file
-    SD().setEditingFile(currentJournal);
-    loadJournal();
-
-    TOUCH().setDynamicScroll(0);
-    newLineAdded = true;
-    CurrentJournalState = J_TXT;
-
     if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
     SDActive = false;
+    // Load file
+    TXT_INIT_JournalMode();
+    
     return;
   }
 
@@ -237,16 +229,11 @@ void JMENUCommand(String command) {
 
       currentJournal = fileName;
 
-      // Load file
-      SD().setEditingFile(currentJournal);
-      loadJournal();
-
-      TOUCH().setDynamicScroll(0);
-      newLineAdded = true;
-      CurrentJournalState = J_TXT;
-
       if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
       SDActive = false;
+      // Load file
+      TXT_INIT_JournalMode();
+      
       return;
     }
   }
@@ -316,135 +303,9 @@ void processKB_JOURNAL() {
         }
       }
       break;
-
-    case J_TXT:
-      if (currentMillis - KBBounceMillis >= KB_COOLDOWN) {  
-      inchar = KB().updateKeypress();
-      // SET MAXIMUMS AND FONT
-      EINK().setTXTFont(EINK().getCurrentFont());
-
-      // UPDATE SCROLLBAR
-      TOUCH().updateScrollFromTouch();
-
-      // HANDLE INPUTS
-      //No char recieved
-      if (inchar == 0);  
-      else if (inchar == 12) {
-        JOURNAL_INIT();
-      }
-      //TAB Recieved
-      else if (inchar == 9) {                                  
-        currentLine += "    ";
-      }                                      
-      //SHIFT Recieved
-      else if (inchar == 17) {                                  
-        if (KB().getKeyboardState() == SHIFT) KB().setKeyboardState(NORMAL);
-        else KB().setKeyboardState(SHIFT);
-      }
-      //FN Recieved
-      else if (inchar == 18) {                                  
-        if (KB().getKeyboardState() == FUNC) KB().setKeyboardState(NORMAL);
-        else KB().setKeyboardState(FUNC);
-      }
-      //Space Recieved
-      else if (inchar == 32) {                                  
-        currentLine += " ";
-      }
-      //CR Recieved
-      else if (inchar == 13) {                          
-        allLines.push_back(currentLine);
-        currentLine = "";
-        newLineAdded = true;
-      }
-      //ESC / CLEAR Recieved
-      else if (inchar == 20) {                                  
-        allLines.clear();
-        currentLine = "";
-        OLED().oledWord("Clearing...");
-        doFull = true;
-        newLineAdded = true;
-        delay(300);
-      }
-      // LEFT
-      else if (inchar == 19) {                                  
-        
-      }
-      // RIGHT
-      else if (inchar == 21) {                                  
-        
-      }
-      //BKSP Recieved
-      else if (inchar == 8) {                  
-        if (currentLine.length() > 0) {
-          currentLine.remove(currentLine.length() - 1);
-        }
-      }
-      //SAVE Recieved
-      else if (inchar == 6) { 
-        saveJournal();
-        KB().setKeyboardState(NORMAL);
-        newLineAdded = true;
-      }
-      //LOAD Recieved
-      else if (inchar == 5) {
-        loadJournal();
-        KB().setKeyboardState(NORMAL);
-        newLineAdded = true;
-      }
-      else {
-        currentLine += inchar;
-        if (inchar >= 48 && inchar <= 57) {}  //Only leave FN on if typing numbers
-        else if (KB().getKeyboardState() != NORMAL) {
-          KB().setKeyboardState(NORMAL);
-        }
-      }
-
-      currentMillis = millis();
-      //Make sure oled only updates at 60fps
-      if (currentMillis - OLEDFPSMillis >= (1000/60)) {
-        OLEDFPSMillis = currentMillis;
-        // ONLY SHOW OLEDLINE WHEN NOT IN SCROLL MODE
-        if (TOUCH().getLastTouch() == -1) {
-          OLED().oledLine(currentLine);
-          if (TOUCH().getPrevDynamicScroll() != TOUCH().getDynamicScroll()) TOUCH().setPrevDynamicScroll(TOUCH().getDynamicScroll());
-        }
-        else OLED().oledScroll();
-      }
-
-      if (currentLine.length() > 0) {
-        int16_t x1, y1;
-        uint16_t charWidth, charHeight;
-        display.getTextBounds(currentLine, 0, 0, &x1, &y1, &charWidth, &charHeight);
-
-        if (charWidth >= display.width()-5) {
-          // If currentLine ends with a space, just start a new line
-          if (currentLine.endsWith(" ")) {
-            allLines.push_back(currentLine);
-            currentLine = "";
-          }
-          // If currentLine ends with a letter, we are in the middle of a word
-          else {
-            int lastSpace = currentLine.lastIndexOf(' ');
-            String partialWord;
-
-            if (lastSpace != -1) {
-              partialWord = currentLine.substring(lastSpace + 1);
-              currentLine = currentLine.substring(0, lastSpace);  // Strip partial word
-              allLines.push_back(currentLine);
-              currentLine = partialWord;  // Start new line with the partial word
-            } 
-            // No spaces found, whole line is a single word
-            else {
-              allLines.push_back(currentLine);
-              currentLine = "";
-            }
-          }
-          newLineAdded = true;
-        }
-      }
-
+    default:
+      CurrentJournalState = J_MENU;
       break;
-  }
   }
 }
 
@@ -459,18 +320,8 @@ void einkHandler_JOURNAL() {
         EINK().multiPassRefresh(2);
       }
       break;
-    case J_TXT:
-      if (newState && doFull) {
-        display.fillScreen(GxEPD_WHITE);
-        EINK().refresh();
-      }
-      if (newLineAdded && !newState) {
-        EINK().einkTextDynamic(true);
-        EINK().refresh();
-      }
-
-      newState = false;
-      newLineAdded = false;
+    default:
+      CurrentJournalState = J_MENU;
       break;
   } 
 }
