@@ -143,6 +143,12 @@ void PocketmageEink::einkTextDynamic(bool doFull, bool noRefresh) {
 
   drawStatusBar(String("L:") + String(allLines.size()) + " " + SD().getEditingFile());
 }
+
+void PocketmageEink::resetDisplay(bool clearScreen, uint16_t color) {
+  display_.setRotation(3);
+  display_.setFullWindow();
+  if (clearScreen) display_.fillScreen(color);
+}
 int PocketmageEink::countLines(const String& input, size_t maxLineLength) {
   size_t inputLength = input.length();
   uint8_t charCounter = 0;
@@ -168,8 +174,8 @@ void PocketmageEink::forceSlowFullUpdate(bool force)            { forceSlowFullU
 void setupEink() {
   display.init(115200);
   display.setRotation(3);
-  display.setTextColor(GxEPD_BLACK);
   display.setFullWindow();
+  display.setTextColor(GxEPD_BLACK);
   EINK().setTXTFont(&FreeMonoBold9pt7b); // default font, computeFontMetrics_()
 
   xTaskCreatePinnedToCore(
@@ -181,6 +187,7 @@ void setupEink() {
     &einkHandlerTaskHandle,  // Task handle
     0                        // Core ID 
   );
+
 }
 
 uint16_t PocketmageEink::getEinkTextWidth(const String& s) {

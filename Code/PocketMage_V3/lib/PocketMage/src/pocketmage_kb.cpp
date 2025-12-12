@@ -17,13 +17,13 @@
 #include "hid_usage_keyboard.h"
 #include "hid_usage_mouse.h"
 
+static constexpr const char* TAG = "KB";
 /* GPIO Pin number for quit from example logic */
 #define APP_QUIT_PIN                GPIO_NUM_0
 #define MAX_USB_KB_CHARS 64
 
 static char usb_kb_chars[MAX_USB_KB_CHARS] = {0};  // unused slots initialized to '\0'
 
-static const char *TAG = "example";
 QueueHandle_t hid_host_event_queue;
 bool user_shutdown = false;
 static bool HIDInitialized = false;
@@ -651,9 +651,6 @@ void close_USBHID(void) {
   ESP_LOGI(TAG, "USB HID closed successfully");
 }
 
-#pragma region keypad
-// =========================================== Keypad =========================================== //
-
 
 #pragma region keymaps
 // ===================== Keymaps =====================
@@ -668,7 +665,7 @@ char keysArray[4][10] = {
 char keysArraySHFT[4][10] = {
     { 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P' },
     { 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',   8 },
-    {   9, 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',',  13 },
+    {   9, 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '\'',  13 },
     {   0,  17,  18, ' ', ' ', ' ',  28,  29,  30,   0 }
 };
 char keysArrayFN[4][10] = {
@@ -679,7 +676,6 @@ char keysArrayFN[4][10] = {
 };
 #pragma endregion
 
-static constexpr const char* tag = "KB";
 
 Adafruit_TCA8418 keypad;
 // To Do:
@@ -794,7 +790,7 @@ void PocketmageKB::checkUSBKB() {
     if (PowerSystem.getBoostState(boostOn) && boostOn) {
       PowerSystem.setBoost(false);
       detachInterrupt(digitalPinToInterrupt(PWR_BTN));
-      attachInterrupt(digitalPinToInterrupt(PWR_BTN), pocketmage::power::PWR_BTN_irq, FALLING);
+      attachInterrupt(digitalPinToInterrupt(PWR_BTN), pocketmage::PWR_BTN_irq, FALLING);
     }
 
     PowerSystem.setUSBControlBMS();

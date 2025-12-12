@@ -1,6 +1,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// OTA App
+// Is this an OTA APP? // OTA_APP: set -DOTA_APP_FLAG=1 in platformio.ini
+#if OTA_APP_FLAG
+#define OTA_APP true
+#else
+#define OTA_APP false
+#endif
+
 // CONFIGURATION & SETTINGS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////|
 #define KB_COOLDOWN 50                          // Keypress cooldown
@@ -59,9 +67,5 @@ extern bool ALLOW_NO_MICROSD;    // Allow running without SD card
 extern bool HOME_ON_BOOT;        // Start home app on boot
 extern int OLED_BRIGHTNESS;      // OLED brightness (0-255)
 extern int OLED_MAX_FPS;         // OLED max FPS
-
-// System tags
-extern bool mscEnabled;      // Is USB MSC active?
-extern bool sinkEnabled;     // Is USB in sink mode?
 
 #endif

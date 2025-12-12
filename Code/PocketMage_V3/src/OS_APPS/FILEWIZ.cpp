@@ -5,8 +5,9 @@
 //   888    "     888   888          888    "        `888.8'  `888.8'      888     .888P       //
 //   888          888   888       o  888       o      `888'    `888'       888    d888'    .P  //
 //  o888o        o888o o888ooooood8 o888ooooood8       `8'      `8'       o888o .8888888888P   //
-#include <globals.h>
 
+#include <globals.h>
+#if !OTA_APP // POCKETMAGE_OS
 
 enum FileWizState { WIZ0_, WIZ1_, WIZ1_YN, WIZ2_R, WIZ2_C, WIZ3_ };
 FileWizState CurrentFileWizState = WIZ0_;
@@ -78,7 +79,7 @@ String renderWizMini(String folder, int8_t scrollDelta) {
   // Reload directory if folder changed
   if (folder != prevFolder) {
     SDActive = true;
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
 
     scroll = 0;
     scrollDelta = 0;
@@ -124,7 +125,7 @@ String renderWizMini(String folder, int8_t scrollDelta) {
     prevFolder = folder;
 
     if (SAVE_POWER)
-    setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
     SDActive = false;
   }
 
@@ -132,13 +133,13 @@ String renderWizMini(String folder, int8_t scrollDelta) {
   // Reload directory if file changed
   /*if (refreshFiles) {
     SDActive = true;
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
 
     // reload here
 
     if (SAVE_POWER)
-    setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
     SDActive = false;
   }*/
 
@@ -207,7 +208,7 @@ String renderWizMini(String folder, int8_t scrollDelta) {
 }
 
 String fileWizardMini(bool allowRecentSelect, String rootDir) {
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
 
   int8_t scrollDelta = 0;
   static String selectedPath = "";
@@ -311,15 +312,12 @@ String fileWizardMini(bool allowRecentSelect, String rootDir) {
     }
   }
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   return "";
 }
 
 void processKB_FILEWIZ() {
-  if (OLEDPowerSave) {
-    u8g2.setPowerSave(0);
-    OLEDPowerSave = false;
-  }
+  OLED().setPowerSave(false);
   int currentMillis = millis();
   String outPath = "";
 
@@ -409,7 +407,7 @@ void processKB_FILEWIZ() {
         // Y RECIEVED
         else if (inchar == 'y' || inchar == 'Y') {
           // DELETE FILE
-          pocketmage::file::delFile(SD().getWorkingFile());
+          SD().delFile(SD().getWorkingFile());
           
           // RETURN TO FILE WIZ HOME
           refreshFiles = true;
@@ -478,7 +476,7 @@ void processKB_FILEWIZ() {
         else if (inchar == 13) {      
           // RENAME FILE                    
           String newName = "/" + currentWord + ".txt";
-          pocketmage::file::renFile(SD().getWorkingFile(), newName);
+          SD().renFile(SD().getWorkingFile(), newName);
 
           // RETURN TO WIZ0
           refreshFiles = true;
@@ -550,7 +548,7 @@ void processKB_FILEWIZ() {
         else if (inchar == 13) {      
           // Copy FILE                    
           String newName = "/" + currentWord + ".txt";
-          pocketmage::file::copyFile(SD().getWorkingFile(), newName);
+          SD().copyFile(SD().getWorkingFile(), newName);
 
           // RETURN TO WIZ0
           refreshFiles = true;
@@ -587,9 +585,7 @@ void einkHandler_FILEWIZ() {
     case WIZ0_:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         EINK().drawStatusBar("Select a File (0-9)");
@@ -613,9 +609,7 @@ void einkHandler_FILEWIZ() {
     case WIZ1_:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         EINK().drawStatusBar("- " + SD().getWorkingFile());
@@ -627,9 +621,7 @@ void einkHandler_FILEWIZ() {
     case WIZ1_YN:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         EINK().drawStatusBar("DEL:" + SD().getWorkingFile() + "?(Y/N)");
@@ -641,9 +633,7 @@ void einkHandler_FILEWIZ() {
     case WIZ2_R:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         EINK().drawStatusBar("Enter New Filename:");
@@ -655,9 +645,7 @@ void einkHandler_FILEWIZ() {
     case WIZ2_C:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         EINK().drawStatusBar("Enter Name For Copy:");
@@ -668,3 +656,4 @@ void einkHandler_FILEWIZ() {
       break;
   }
 }
+#endif

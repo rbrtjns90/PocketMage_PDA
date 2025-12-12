@@ -9,11 +9,27 @@
 #include <config.h> // for FULL_REFRESH_AFTER
 #include <SD_MMC.h>
 
+static constexpr const char* TAG = "SD";
+
 extern bool SAVE_POWER;
-static constexpr const char* tag = "SD";
 
 // Initialization of sd class
 static PocketmageSD pm_sd;
+
+// Helpers
+static int countVisibleChars(String input) {
+  int count = 0;
+
+  for (size_t i = 0; i < input.length(); i++) {
+    char c = input[i];
+    // Check if the character is a visible character or space
+    if (c >= 32 && c <= 126) {  // ASCII range for printable characters and space
+      count++;
+    }
+  }
+
+  return count;
+}
 
 // Setup for SD Class
 // @ dependencies:
@@ -23,7 +39,7 @@ static PocketmageSD pm_sd;
 void setupSD() {
   SD_MMC.setPins(SD_CLK, SD_CMD, SD_D0);
   if (!SD_MMC.begin("/sdcard", true) || SD_MMC.cardType() == CARD_NONE) {
-    ESP_LOGE(tag, "MOUNT FAILED");
+    ESP_LOGE(TAG, "MOUNT FAILED");
 
     OLED().oledWord("SD Card Not Detected!");
     delay(2000);
@@ -45,7 +61,7 @@ void setupSD() {
     }
   }
 
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   // Create folders and files if needed
   if (!SD_MMC.exists("/sys"))                 SD_MMC.mkdir( "/sys"                );
   if (!SD_MMC.exists("/notes"))               SD_MMC.mkdir( "/notes"              );
@@ -82,7 +98,355 @@ void setupSD() {
 // Access for other apps
 PocketmageSD& SD() { return pm_sd; }
 
-// ===================== main functions =====================
+    
+void PocketmageSD::saveFile() {
+  if (SD().getNoSD()) {
+      OLED().oledWord("SAVE FAILED - No SD!");
+      delay(5000);
+      return;
+  } else {
+      SDActive = true;
+      pocketmage::setCpuSpeed(240);
+      delay(50);
+
+      String textToSave = vectorToString();
+      ESP_LOGV(TAG, "Text to save: %s", textToSave.c_str());
+
+      if (SD().getEditingFile() == "" || SD().getEditingFile() == "-")
+      SD().setEditingFile("/temp.txt");
+      keypad.disableInterrupts();
+      if (!SD().getEditingFile().startsWith("/"))
+      SD().setEditingFile("/" + SD().getEditingFile());
+      //OLED().oledWord("Saving File: "+ editingFile);
+      SD().writeFile(SD_MMC, (SD().getEditingFile()).c_str(), textToSave.c_str());
+      //OLED().oledWord("Saved: "+ editingFile);
+
+      // Write MetaData
+      SD().writeMetadata(SD().getEditingFile());
+
+      // delay(1000);
+      keypad.enableInterrupts();
+      if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+      SDActive = false;
+  }
+}
+  
+void PocketmageSD::writeMetadata(const String& path) {
+  SDActive = true;
+  pocketmage::setCpuSpeed(240);
+  delay(50);
+
+  File file = SD_MMC.open(path);
+  if (!file || file.isDirectory()) {
+      OLED().oledWord("META WRITE ERR");
+      delay(1000);
+      ESP_LOGE(TAG, "Invalid file for metadata: %s", path);
+      return;
+  }
+  // Get file size
+  size_t fileSizeBytes = file.size();
+  file.close();
+
+  // Format size string
+  String fileSizeStr = String(fileSizeBytes) + " Bytes";
+
+  // Get line and char counts
+  int charCount = countVisibleChars(SD().readFileToString(SD_MMC, path.c_str()));
+
+  String charStr = String(charCount) + " Char";
+  // Get current time from RTC
+  DateTime now = CLOCK().nowDT();
+  char timestamp[20];
+  sprintf(timestamp, "%04d%02d%02d-%02d%02d", now.year(), now.month(), now.day(), now.hour(),
+          now.minute());
+
+  // Compose new metadata line
+  String newEntry = path + "|" + timestamp + "|" + fileSizeStr + "|" + charStr;
+
+  const char* metaPath = SYS_METADATA_FILE;
+  // Read existing entries and rebuild the file without duplicates
+  File metaFile = SD_MMC.open(metaPath, FILE_READ);
+  String updatedMeta = "";
+  bool replaced = false;
+
+  if (metaFile) {
+      while (metaFile.available()) {
+      String line = metaFile.readStringUntil('\n');
+      if (line.startsWith(path + "|")) {
+          updatedMeta += newEntry + "\n";
+          replaced = true;
+      } else if (line.length() > 1) {
+          updatedMeta += line + "\n";
+      }
+      }
+      metaFile.close();
+  }
+
+  if (!replaced) {
+      updatedMeta += newEntry + "\n";
+  }
+  // Write back the updated metadata
+  metaFile = SD_MMC.open(metaPath, FILE_WRITE);
+  if (!metaFile) {
+      ESP_LOGE(TAG, "Failed to open metadata file for writing: %s", metaPath);
+      return;
+  }
+  metaFile.print(updatedMeta);
+  metaFile.close();
+  ESP_LOGI(TAG, "Metadata updated");
+
+  if (SAVE_POWER)
+  pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+  SDActive = false;
+}
+  
+void PocketmageSD::loadFile(bool showOLED) {
+  SDActive = true;
+  pocketmage::setCpuSpeed(240);
+  delay(50);
+
+  if (SD().getNoSD()) {
+      OLED().oledWord("LOAD FAILED - No SD!");
+      delay(5000);
+      return;
+  } else {
+      SDActive = true;
+      pocketmage::setCpuSpeed(240);
+      delay(50);
+
+      keypad.disableInterrupts();
+      if (showOLED)
+      OLED().oledWord("Loading File");
+      if (!SD().getEditingFile().startsWith("/"))
+      SD().setEditingFile("/" + SD().getEditingFile());
+      String textToLoad = SD().readFileToString(SD_MMC, (SD().getEditingFile()).c_str());
+      ESP_LOGV(TAG, "Text to load: %s", textToLoad.c_str());
+
+      stringToVector(textToLoad);
+      keypad.enableInterrupts();
+      if (showOLED) {
+      OLED().oledWord("File Loaded");
+      delay(200);
+      }
+      if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+      SDActive = false;
+  }
+}
+  
+void PocketmageSD::delFile(String fileName) {
+  if (SD().getNoSD()) {
+      OLED().oledWord("DELETE FAILED - No SD!");
+      delay(5000);
+      return;
+  } else {
+      SDActive = true;
+      pocketmage::setCpuSpeed(240);
+      delay(50);
+
+      keypad.disableInterrupts();
+      // OLED().oledWord("Deleting File: "+ fileName);
+      if (!fileName.startsWith("/"))
+      fileName = "/" + fileName;
+      SD().deleteFile(SD_MMC, fileName.c_str());
+      // OLED().oledWord("Deleted: "+ fileName);
+
+      // Delete MetaData
+      SD().deleteMetadata(fileName);
+
+      delay(1000);
+      keypad.enableInterrupts();
+      if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+      SDActive = false;
+  }
+}
+  
+void PocketmageSD::deleteMetadata(String path) {
+  SDActive = true;
+  pocketmage::setCpuSpeed(240);
+  delay(50);
+
+  const char* metaPath = SYS_METADATA_FILE;
+
+  // Open metadata file for reading
+  File metaFile = SD_MMC.open(metaPath, FILE_READ);
+  if (!metaFile) {
+      ESP_LOGE(TAG, "Metadata file not found: %s", metaPath);
+      return;
+  }
+
+  // Store lines that don't match the given path
+  std::vector<String> keptLines;
+  while (metaFile.available()) {
+      String line = metaFile.readStringUntil('\n');
+      if (!line.startsWith(path + "|")) {
+      keptLines.push_back(line);
+      }
+  }
+  metaFile.close();
+
+  // Delete the original metadata file
+  SD_MMC.remove(metaPath);
+
+  // Recreate the file and write back the kept lines
+  File writeFile = SD_MMC.open(metaPath, FILE_WRITE);
+  if (!writeFile) {
+      ESP_LOGE(TAG, "Failed to recreate metadata file. %s", writeFile.path());
+      return;
+  }
+
+  for (const String& line : keptLines) {
+      writeFile.println(line);
+  }
+
+  writeFile.close();
+  ESP_LOGI(TAG, "Metadata entry deleted (if it existed).");
+  }
+  
+void PocketmageSD::renFile(String oldFile, String newFile) {
+  if (SD().getNoSD()) {
+      OLED().oledWord("RENAME FAILED - No SD!");
+      delay(5000);
+      return;
+  } else {
+      SDActive = true;
+      pocketmage::setCpuSpeed(240);
+      delay(50);
+
+      keypad.disableInterrupts();
+      // OLED().oledWord("Renaming "+ oldFile + " to " + newFile);
+      if (!oldFile.startsWith("/"))
+      oldFile = "/" + oldFile;
+      if (!newFile.startsWith("/"))
+      newFile = "/" + newFile;
+      SD().renameFile(SD_MMC, oldFile.c_str(), newFile.c_str());
+      OLED().oledWord(oldFile + " -> " + newFile);
+      delay(1000);
+
+      // Update MetaData
+      SD().renMetadata(oldFile, newFile);
+
+      keypad.enableInterrupts();
+      if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+      SDActive = false;
+  }
+}
+  
+void PocketmageSD::renMetadata(String oldPath, String newPath) {
+  SDActive = true;
+  pocketmage::setCpuSpeed(240);
+  delay(50);
+  const char* metaPath = SYS_METADATA_FILE;
+
+  // Open metadata file for reading
+  File metaFile = SD_MMC.open(metaPath, FILE_READ);
+  if (!metaFile) {
+      ESP_LOGE(TAG, "Metadata file not found: %s", metaPath);
+      return;
+  }
+
+  std::vector<String> updatedLines;
+
+  while (metaFile.available()) {
+      String line = metaFile.readStringUntil('\n');
+      if (line.startsWith(oldPath + "|")) {
+      // Replace old path with new path at the start of the line
+      int separatorIndex = line.indexOf('|');
+      if (separatorIndex != -1) {
+          // Keep rest of line after '|'
+          String rest = line.substring(separatorIndex);
+          line = newPath + rest;
+      } else {
+          // Just replace whole line with new path if malformed
+          line = newPath;
+      }
+      }
+      updatedLines.push_back(line);
+  }
+
+  metaFile.close();
+
+  // Delete old metadata file
+  SD_MMC.remove(metaPath);
+
+  // Recreate file and write updated lines
+  File writeFile = SD_MMC.open(metaPath, FILE_WRITE);
+  if (!writeFile) {
+      ESP_LOGE(TAG, "Failed to recreate metadata file. %s", writeFile.path());
+      return;
+  }
+
+  for (const String& l : updatedLines) {
+      writeFile.println(l);
+  }
+
+  writeFile.close();
+  ESP_LOGI(TAG, "Metadata updated for renamed file.");
+
+  if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+  }
+  
+  void PocketmageSD::copyFile(String oldFile, String newFile) {
+  if (SD().getNoSD()) {
+      OLED().oledWord("COPY FAILED - No SD!");
+      delay(5000);
+      return;
+  } else {
+      SDActive = true;
+      pocketmage::setCpuSpeed(240);
+      delay(50);
+
+      keypad.disableInterrupts();
+      OLED().oledWord("Loading File");
+      if (!oldFile.startsWith("/"))
+      oldFile = "/" + oldFile;
+      if (!newFile.startsWith("/"))
+      newFile = "/" + newFile;
+      String textToLoad = SD().readFileToString(SD_MMC, (oldFile).c_str());
+      SD().writeFile(SD_MMC, (newFile).c_str(), textToLoad.c_str());
+      OLED().oledWord("Saved: " + newFile);
+
+      // Write MetaData
+      SD().writeMetadata(newFile);
+
+      delay(1000);
+      keypad.enableInterrupts();
+
+      if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+      SDActive = false;
+  }
+}
+  
+void PocketmageSD::appendToFile(String path, String inText) {
+  if (SD().getNoSD()) {
+      OLED().oledWord("OP FAILED - No SD!");
+      delay(5000);
+      return;
+  } else {
+      SDActive = true;
+      pocketmage::setCpuSpeed(240);
+      delay(50);
+
+      keypad.disableInterrupts();
+      SD().appendFile(SD_MMC, path.c_str(), inText.c_str());
+
+      // Write MetaData
+      SD().writeMetadata(path);
+
+      keypad.enableInterrupts();
+
+      if (SAVE_POWER)
+      pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
+      SDActive = false;
+  }
+}
+
+// ===================== low level functions =====================
 // Low-Level SDMMC Operations switch to using internal fs::FS*
 void PocketmageSD::listDir(fs::FS &fs, const char *dirname) {
   if (noSD_) {
@@ -91,7 +455,7 @@ void PocketmageSD::listDir(fs::FS &fs, const char *dirname) {
     return;
   }
   else {
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
     noTimeout = true;
     ESP_LOGI(tag, "Listing directory %s\r\n", dirname);
@@ -141,7 +505,7 @@ void PocketmageSD::listDir(fs::FS &fs, const char *dirname) {
     // }
 
     noTimeout = false;
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   }
 }
 void PocketmageSD::readFile(fs::FS &fs, const char *path) {
@@ -151,7 +515,7 @@ void PocketmageSD::readFile(fs::FS &fs, const char *path) {
     return;
   }
   else {
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
     noTimeout = true;
     ESP_LOGI(tag, "Reading file %s\r\n", path);
@@ -165,7 +529,7 @@ void PocketmageSD::readFile(fs::FS &fs, const char *path) {
 
     file.close();
     noTimeout = false;
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   }
 }
 String PocketmageSD::readFileToString(fs::FS &fs, const char *path) {
@@ -175,7 +539,7 @@ String PocketmageSD::readFileToString(fs::FS &fs, const char *path) {
     return "";
   }
   else { 
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
 
     noTimeout = true;
@@ -206,7 +570,7 @@ void PocketmageSD::writeFile(fs::FS &fs, const char *path, const char *message) 
     return;
   }
   else {
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
     noTimeout = true;
     ESP_LOGI(tag, "Writing file: %s\r\n", path);
@@ -226,7 +590,7 @@ void PocketmageSD::writeFile(fs::FS &fs, const char *path, const char *message) 
     }
     file.close();
     noTimeout = false;
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   }
 }
 void PocketmageSD::appendFile(fs::FS &fs, const char *path, const char *message) {
@@ -236,7 +600,7 @@ void PocketmageSD::appendFile(fs::FS &fs, const char *path, const char *message)
     return;
   }
   else {
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
     noTimeout = true;
     ESP_LOGI(tag, "Appending to file: %s\r\n", path);
@@ -255,7 +619,7 @@ void PocketmageSD::appendFile(fs::FS &fs, const char *path, const char *message)
     }
     file.close();
     noTimeout = false;
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   }
 }
 void PocketmageSD::renameFile(fs::FS &fs, const char *path1, const char *path2) {
@@ -265,7 +629,7 @@ void PocketmageSD::renameFile(fs::FS &fs, const char *path1, const char *path2) 
     return;
   }
   else {
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
     noTimeout = true;
     ESP_LOGI(tag, "Renaming file %s to %s\r\n", path1, path2);
@@ -277,7 +641,7 @@ void PocketmageSD::renameFile(fs::FS &fs, const char *path1, const char *path2) 
       ESP_LOGE(tag, "Rename failed: %s to %s", path1, path2);
     }
     noTimeout = false;
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   }
 }
 void PocketmageSD::deleteFile(fs::FS &fs, const char *path) {
@@ -287,7 +651,7 @@ void PocketmageSD::deleteFile(fs::FS &fs, const char *path) {
     return;
   }
   else {
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
     delay(50);
     noTimeout = true;
     ESP_LOGI(tag, "Deleting file: %s\r\n", path);
@@ -298,6 +662,7 @@ void PocketmageSD::deleteFile(fs::FS &fs, const char *path) {
       ESP_LOGE(tag, "Delete failed for %s", path);
     }
     noTimeout = false;
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   }
 }
+

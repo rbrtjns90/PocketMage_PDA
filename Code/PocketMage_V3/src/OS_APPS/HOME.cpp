@@ -5,14 +5,15 @@
 //   888     888  888      888  8  `888'   888   888    "     //
 //   888     888  `88b    d88'  8    Y     888   888       o  //
 //  o888o   o888o  `Y8bood8P'  o8o        o888o o888ooooood8  //
+
 #include <globals.h>
 #include "esp_log.h"
 
 #define IDLE_TIME 20000 // time to wait for idle (ms)
-
+#if !OTA_APP // POCKETMAGE_OS
 static String currentLine = "";
 static bool resetIdleAnim = false; 
-
+static int prevTime = 0;
 long lastInput = 0;
 
 void HOME_INIT() {
@@ -22,6 +23,7 @@ void HOME_INIT() {
   CurrentHOMEState = HOME_HOME;
   lastInput = millis();
   newState = true;
+  //frames.push_back(&testTextScreen);
 }
 
 void commandSelect(String command) {
@@ -178,9 +180,8 @@ void commandSelect(String command) {
 }
 
 void drawHome() {
-  display.setRotation(3);
-  display.fillScreen(GxEPD_WHITE);
-  
+  EINK().resetDisplay();
+
   int16_t x1, y1;
   uint16_t charWidth, charHeight;
   uint8_t appsPerRow = 5; // Number of apps per row
@@ -437,6 +438,7 @@ void einkHandler_HOME() {
         newState = false;
         drawHome();
         EINK().refresh();
+        //einkFramesDynamic(frames,false);
         //EINK().multiPassRefresh(2);
       }
       break;
@@ -496,3 +498,4 @@ void einkHandler_HOME() {
       break;
   }
 }
+#endif

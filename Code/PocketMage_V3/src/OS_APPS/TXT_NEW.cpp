@@ -7,6 +7,8 @@
 //      o888o     o888o  o88888o     o888o      //
 
 #include <globals.h>
+#if !OTA_APP // POCKETMAGE_OS
+static constexpr const char* TAG = "TXT_NEWz";
 
 // Font includes
 // Mono
@@ -1065,7 +1067,7 @@ void loadMarkdownFile(const String& path) {
     refreshAllLineIndexes();
 
     if (SAVE_POWER)
-      setCpuFrequencyMhz(80);
+      pocketmage::setCpuSpeed(80);
     SDActive = false;
     return;
   }
@@ -1077,7 +1079,7 @@ void loadMarkdownFile(const String& path) {
   }
 
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   docLines.clear();
@@ -1097,7 +1099,7 @@ void loadMarkdownFile(const String& path) {
     refreshAllLineIndexes();
 
     if (SAVE_POWER)
-      setCpuFrequencyMhz(80);
+      pocketmage::setCpuSpeed(80);
     SDActive = false;
     return;
   }
@@ -1163,7 +1165,7 @@ void loadMarkdownFile(const String& path) {
   refreshAllLineIndexes();
 
   if (SAVE_POWER)
-    setCpuFrequencyMhz(80);
+    pocketmage::setCpuSpeed(80);
   SDActive = false;
 
   OLED().oledWord("FILE LOADED");
@@ -1177,9 +1179,9 @@ void saveMarkdownFile(const String& path) {
     delay(3000);
     return;
   }
-
+  ESP_LOGE(TAG, "In save markdown file, setting cpu speed");
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   // Determine save path
@@ -1223,14 +1225,14 @@ void saveMarkdownFile(const String& path) {
   file.close();
 
   // Save metadata
-  pocketmage::file::writeMetadata(savePath);
+  SD().writeMetadata(savePath);
   SD().setEditingFile(savePath);
 
   OLED().oledWord("Saved: " + savePath);
   delay(1000);
 
   if (SAVE_POWER)
-    setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -1286,7 +1288,7 @@ void editAppend(char inchar) {
 
   if (inchar != 0) {
     // Increase clock speed here for faster processing?
-    setCpuFrequencyMhz(240);
+    pocketmage::setCpuSpeed(240);
   }
 
   // HANDLE INPUTS
@@ -1759,11 +1761,7 @@ void einkHandler_TXT_NEW() {
 }
 
 void processKB_TXT_NEW() {
-  if (OLEDPowerSave) {
-    u8g2.setPowerSave(0);
-    OLEDPowerSave = false;
-  }
-
+  OLED().setPowerSave(false);
   disableTimeout = false;
   String outPath = "";
   char inchar;
@@ -1894,3 +1892,4 @@ void processKB_TXT_NEW() {
       break;
   }
 }
+#endif

@@ -1,5 +1,6 @@
-#include <globals.h>
 
+#include <globals.h>
+#if !OTA_APP // POCKETMAGE_OS
 enum JournalState {J_MENU, J_TXT};
 JournalState CurrentJournalState = J_MENU;
 
@@ -20,12 +21,12 @@ void JOURNAL_INIT() {
 // File Operations
 void loadJournal() {
   SD().setEditingFile(currentJournal);
-  pocketmage::file::loadFile();
+  SD().loadFile();
 }
 
 void saveJournal() {
   SD().setEditingFile(currentJournal);
-  pocketmage::file::saveFile();
+  SD().saveFile();
 }
 
 String getCurrentJournal() {return currentJournal;}
@@ -37,7 +38,7 @@ bool isLeapYear(int year) {
 
 void drawJMENU() {
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   // Display background
@@ -136,13 +137,13 @@ void drawJMENU() {
     if (SD_MMC.exists(fileCode)) display.fillRect(91 + (7 * (i - 1)), 149, 4, 4, GxEPD_BLACK);
   }
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
 void JMENUCommand(String command) {
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   command.toLowerCase();
@@ -204,14 +205,14 @@ void JMENUCommand(String command) {
       int day = dayStr.toInt();
 
       if (day < 1 || day > 31) {
-        if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+        if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
         SDActive = false;
         return;  // invalid day
       }
       String monthMap = "janfebmaraprmayjunjulaugsepoctnovdec";
       int monthIndex = monthMap.indexOf(monthStr);
       if (monthIndex == -1) {
-        if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+        if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
         SDActive = false;
         return;  // invalid month
       }
@@ -238,7 +239,7 @@ void JMENUCommand(String command) {
     }
   }
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -325,3 +326,4 @@ void einkHandler_JOURNAL() {
       break;
   } 
 }
+#endif

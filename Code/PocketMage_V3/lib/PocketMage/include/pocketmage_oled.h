@@ -21,16 +21,18 @@ class PocketmageOled {
 public:
   explicit PocketmageOled(U8G2 &u8) : u8g2_(u8) {}
 
-  void setPowerSave(int in)                                   { u8g2_.setPowerSave(in);}
   
   // Main methods
   void oledWord(String word, bool allowLarge = false, bool showInfo = true);
   void oledLine(String line, bool doProgressBar = true, String bottomMsg = "");
   void oledScroll();
   void infoBar();
+  void setPowerSave(bool enable);
+  bool getPowerSave() const                                   { return OLEDPowerSave_; }
 
 private:
   U8G2                  &u8g2_;        // class reference to hardware oled object
+  volatile bool OLEDPowerSave_;
  
   // helpers
   uint16_t strWidth(const String& s) const;

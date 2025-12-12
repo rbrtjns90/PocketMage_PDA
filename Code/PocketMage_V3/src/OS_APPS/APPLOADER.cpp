@@ -1,3 +1,4 @@
+
 #include <globals.h>
 #include <ESP32-targz.h>
 #include <Update.h>
@@ -7,7 +8,7 @@
 #define APP_DIRECTORY   "/apps"
 #define TEMP_DIR        "/apps/temp"
 #define PREFS_NAMESPACE "AppLoader"
-
+#if !OTA_APP // POCKETMAGE_OS
 static String currentLine = "";
 
 enum AppLoaderState {MENU, SWAP_OR_EDIT, INSTALLING, SWAP};
@@ -90,7 +91,7 @@ bool loadAppInfo(int otaIndex, AppInfo &info) {
 }
 
 void loadAndDrawAppIcon(int x, int y, int otaIndex, bool showName, int maxNameChars) {
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
 
 	AppInfo app;
 	if (!loadAppInfo(otaIndex, app)) return;
@@ -128,7 +129,7 @@ void loadAndDrawAppIcon(int x, int y, int otaIndex, bool showName, int maxNameCh
     display.print(appNameStr);
 	}
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 }
 
 void cleanupAppsTemp(String binPath) {
@@ -156,7 +157,7 @@ struct InstallTaskParams {
 };
 
 static void installTask(void *param) {
-	setCpuFrequencyMhz(240);
+	pocketmage::setCpuSpeed(240);
 
 	InstallTaskParams *p = (InstallTaskParams *)param;
 	g_installProgress = 0;
@@ -169,7 +170,7 @@ static void installTask(void *param) {
 	// --- Check TAR exists ---
 	if (!SD_MMC.exists(tarPath.c_str())) {
 		Serial.printf("Tar not found: %s\n", tarPath.c_str());
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 		g_installFailed = true;
 		g_installDone = true;
 		delete p;
@@ -181,7 +182,7 @@ static void installTask(void *param) {
 		//!rmRF(SD_MMC, TEMP_DIR) ||
 		!ensureDir(SD_MMC, TEMP_DIR)) {
 		Serial.println("Failed to prepare TEMP_DIR");
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 		g_installFailed = true;
 		g_installDone = true;
 		delete p;
@@ -198,7 +199,7 @@ static void installTask(void *param) {
 	if (!unpacker.tarExpander(SD_MMC, tarPath.c_str(), SD_MMC, TEMP_DIR)) {
 		Serial.printf("Extraction failed (err=%d)\n", unpacker.tarGzGetError());
 
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 		g_installFailed = true;
 		g_installDone = true;
@@ -215,7 +216,7 @@ static void installTask(void *param) {
 		Serial.printf("Bin not found after extraction: %s\n", binPath.c_str());
 
     cleanupAppsTemp(binPath);
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 		g_installFailed = true;
 		g_installDone = true;
@@ -235,7 +236,7 @@ static void installTask(void *param) {
 		Serial.printf("OTA_%d partition not found\n", p->otaIndex);
 
     cleanupAppsTemp(binPath);
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 		g_installFailed = true;
 		g_installDone = true;
@@ -248,7 +249,7 @@ static void installTask(void *param) {
 		Serial.printf("Failed to open: %s\n", binPath.c_str());
 
     cleanupAppsTemp(binPath);
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 		g_installFailed = true;
 		g_installDone = true;
@@ -267,7 +268,7 @@ static void installTask(void *param) {
 		f.close();
 
     cleanupAppsTemp(binPath);
-    if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+    if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 		g_installFailed = true;
 		g_installDone = true;
@@ -286,7 +287,7 @@ static void installTask(void *param) {
 			f.close();
 
       cleanupAppsTemp(binPath);
-      if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+      if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 			g_installFailed = true;
 			g_installDone = true;
@@ -321,7 +322,7 @@ static void installTask(void *param) {
 	}
 
 	cleanupAppsTemp(binPath);
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
 
 	g_installProgress = 100;
 	g_installDone = true;
@@ -615,8 +616,7 @@ void einkHandler_APPLOADER() {
     case MENU:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
+        EINK().resetDisplay(false);
         display.drawBitmap(0, 0, _appLoader, 320, 218, GxEPD_BLACK);
 
         loadAndDrawAppIcon(42 , 146, 1, true, 7);  // OTA1
@@ -632,3 +632,4 @@ void einkHandler_APPLOADER() {
       break;
   }
 }
+#endif

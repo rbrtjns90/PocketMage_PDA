@@ -23,9 +23,6 @@ void setupOled() {
   u8g2.setPowerSave(0);
   u8g2.clearBuffer();
   u8g2.sendBuffer();
-
-  // SHOW "PocketMage" while DEVICE BOOTS
-  OLED().oledWord("   PocketMage   ", true, false);
 }
 
 // oled object reference for other apps
@@ -273,6 +270,10 @@ void PocketmageOled::oledScroll() {
   u8g2_.sendBuffer();
 }
 
+void PocketmageOled::setPowerSave(bool enable) {
+  OLEDPowerSave_ = enable;
+  u8g2_.setPowerSave(enable ? 1 : 0);
+}
 // ===================== private functions =====================
 // COMPUTE STRING WIDTH IN EINK PIXELS
 uint16_t PocketmageOled::strWidth(const String& s) const {

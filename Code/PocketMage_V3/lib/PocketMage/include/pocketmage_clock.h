@@ -17,16 +17,21 @@ public:
   explicit PocketmageCLOCK(RTC_PCF8563 &rtc) : rtc_(rtc) {}
 
   bool begin();
+  void setTimeFromString(String timeStr);
   bool isValid();
 
   void setToCompileTimeUTC() { rtc_.adjust(DateTime(F(__DATE__), F(__TIME__))); }
 
   DateTime nowDT()                                         { return rtc_.now(); }
   RTC_PCF8563& getRTC()                                          { return rtc_; }
+  // To Do: create a task on core 1 that checks for timeout and sets a flag for OS
   long getTimeDiff()                { return timeoutMillis_ - prevTimeMillis_; }
   volatile long getTimeoutMillis() const                    { return timeoutMillis_; }
+
+  volatile long  getPrevTimeMillis() const                    { return prevTimeMillis_; }
   void setTimeoutMillis(long t)                            { timeoutMillis_ = t;  }
   void setPrevTimeMillis(long t)                        { prevTimeMillis_ = t; } 
+
 private:
   RTC_PCF8563 &rtc_;  
   bool begun_ = false;

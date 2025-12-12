@@ -7,9 +7,33 @@
 
 #include <pocketmage.h>
 
+
 // Initialization of bz class
 static PocketmageBZ pm_bz;
+/*
+uint32_t bzFrequency = 440;
 
+const ledc_timer_config_t ledc_timer{
+    .speed_mode       = LEDC_LOW_SPEED_MODE,
+    .duty_resolution  = PWM_RESOLUTION,
+    .timer_num        = LEDC_TIMER_1,
+    .freq_hz          = bzFrequency,
+    .clk_cfg          = LEDC_AUTO_CLK,
+};
+
+
+
+
+// Configure LEDC channel
+const ledc_channel_config_t ledc_channel = {
+    .gpio_num = BZ_PIN,
+    .speed_mode = LEDC_LOW_SPEED_MODE,
+    .channel = LEDC_CHANNEL_1,
+    .timer_sel = LEDC_TIMER_1,
+    .duty = 0,
+};
+
+*/
 PocketmageBZ::PocketmageBZ()
   : buzzer_(BZ_PIN) {}
 
@@ -28,6 +52,8 @@ void PocketmageBZ::end() {
 
 // Setup for Buzzer Class
 void setupBZ() {
+  //ledc_timer_config(&ledc_timer);
+  //ledc_channel_config(&ledc_channel);
   auto& bz = BZ();
   bz.begin();
   bz.playJingle(Jingles::Startup);

@@ -19,14 +19,16 @@ class PocketmageSD {
 public:
   explicit PocketmageSD() {}
 
-  // Main methods  To Do: remove arguments for fs::FS &fs and reference internal fs::FS* instead
-  void listDir(fs::FS &fs, const char *dirname);
-  void readFile(fs::FS &fs, const char *path);
-  String readFileToString(fs::FS &fs, const char *path);
-  void writeFile(fs::FS &fs, const char *path, const char *message);
-  void appendFile(fs::FS &fs, const char *path, const char *message);
-  void renameFile(fs::FS &fs, const char *path1, const char *path2);
-  void deleteFile(fs::FS &fs, const char *path);
+  void saveFile();
+  void writeMetadata(const String& path);
+  void loadFile(bool showOLED = true);
+  void delFile(String fileName);
+  void deleteMetadata(String path);
+  void renFile(String oldFile, String newFile);
+  void renMetadata(String oldPath, String newPath);
+  void copyFile(String oldFile, String newFile);
+  void appendToFile(String path, String inText);
+
   // Getters / Setters
   bool getNoSD()  {return noSD_;}
   void setNoSD(bool in) {noSD_ = in;}
@@ -40,7 +42,17 @@ public:
   String getFilesListIndex(int index) {return filesList_[index];}
   void setFilesListIndex(int index, String content) {filesList_[index] = content;}
 
+  // low level methods  To Do: remove arguments for fs::FS &fs and reference internal fs::FS* instead
+  void listDir(fs::FS &fs, const char *dirname);
+  void readFile(fs::FS &fs, const char *path);
+  String readFileToString(fs::FS &fs, const char *path);
+  void writeFile(fs::FS &fs, const char *path, const char *message);
+  void appendFile(fs::FS &fs, const char *path, const char *message);
+  void renameFile(fs::FS &fs, const char *path1, const char *path2);
+  void deleteFile(fs::FS &fs, const char *path);
+  
 private:
+
   static constexpr const char*  tag               = "MAGE_SD";
 
   String editingFile_ = "";

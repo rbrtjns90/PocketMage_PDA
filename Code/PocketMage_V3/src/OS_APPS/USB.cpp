@@ -1,3 +1,4 @@
+
 #include <globals.h>
 
 #include <USB.h>
@@ -5,9 +6,11 @@
 #include <sdmmc_cmd.h>
 #include <driver/sdmmc_host.h>
 #include <driver/sdmmc_defs.h>
-
+#if !OTA_APP // POCKETMAGE_OS
 static String currentLine = "";
 static constexpr const char* TAG = "USB";
+static USBMSC msc;
+static sdmmc_card_t* card = nullptr;     // SD card pointer
 
 void USBAppShutdown() {
   if (!mscEnabled) return;
@@ -59,7 +62,7 @@ void USBAppShutdown() {
 
   if (!SD_MMC.exists("/sys"))     SD_MMC.mkdir("/sys");
   if (!SD_MMC.exists("/journal")) SD_MMC.mkdir("/journal");
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   disableTimeout = false;
 
   // Switch USB contol to BMS
@@ -118,7 +121,7 @@ void USB_INIT() {
 
   // OPEN USB FILE TRANSFER
   OLED().oledWord("Initializing USB");
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   disableTimeout = true;
@@ -183,7 +186,7 @@ void USB_INIT() {
   USB.onEvent(usbEventCallback);
   USB.begin();
 
-  ESP_LOGI("USB MSC started. Capacity: %d bytes\n", card->csd.capacity * card->csd.sector_size);
+  //ESP_LOGI("USB MSC started. Capacity: %d bytes\n", card->csd.capacity * card->csd.sector_size);
   mscEnabled = true;
   delay(50);
 
@@ -229,3 +232,4 @@ void einkHandler_USB() {
     EINK().multiPassRefresh(2);
   }
 }
+#endif

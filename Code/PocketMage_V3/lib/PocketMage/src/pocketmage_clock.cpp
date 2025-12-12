@@ -7,7 +7,7 @@
 
 #include "pocketmage.h"
 
-static constexpr const char* tag = "CLOCK";
+static constexpr const char* TAG = "CLOCK";
 
 RTC_PCF8563 rtc;
 
@@ -20,7 +20,7 @@ static PocketmageCLOCK pm_clock(rtc);
 void setupClock(){
   pinMode(RTC_INT, INPUT);
   if (!CLOCK().begin()) {
-    ESP_LOGE(tag, "Couldn't find RTC");
+    ESP_LOGE(TAG, "Couldn't find RTC");
     delay(1000);
   }
   // SET CLOCK IF NEEDED
@@ -46,6 +46,27 @@ bool PocketmageCLOCK::begin() {
   return true;
 }
 
+void PocketmageCLOCK::setTimeFromString(String timeStr) {
+  if (timeStr.length() != 5 || timeStr[2] != ':') {
+      ESP_LOGE(TAG, "Invalid format! Use HH:MM. Provided str: %s", timeStr.c_str());
+      return;
+  }
+
+  int hours = timeStr.substring(0, 2).toInt();
+  int minutes = timeStr.substring(3, 5).toInt();
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      OLED().oledWord("Invalid");
+      delay(500);
+      return;
+  }
+
+  DateTime now = CLOCK().nowDT();  // Get current date
+  CLOCK().getRTC().adjust(DateTime(now.year(), now.month(), now.day(), hours, minutes, 0));
+
+  ESP_LOGI(TAG, "Time updated!");
+}
+    
 bool PocketmageCLOCK::isValid() {
   if (!begun_) return false;
   DateTime t = rtc_.now();

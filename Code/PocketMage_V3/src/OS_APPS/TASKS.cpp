@@ -5,10 +5,11 @@
 //      888        .88ooo8888.        `"Y88b  888`88b.         `"Y88b //
 //      888       .8'     `888.  oo     .d8P  888  `88b.  oo     .d8P //
 //     o888o     o88o     o8888o 8""88888P'  o888o  o888o 8""88888P'  //  
+
 #include <globals.h>
 #include "esp32-hal-log.h"
 #include "esp_log.h"
-
+#if !OTA_APP // POCKETMAGE_OS
 enum TasksState { TASKS0, TASKS0_NEWTASK, TASKS1, TASKS1_EDITTASK };
 TasksState CurrentTasksState = TASKS0;
 
@@ -37,10 +38,10 @@ void sortTasksByDueDate(std::vector<std::vector<String>> &tasks) {
 
 void updateTasksFile() {
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
   // Clear the existing tasks file first
-  pocketmage::file::delFile("/sys/tasks.txt");
+  SD().delFile("/sys/tasks.txt");
 
   // Iterate through the tasks vector and append each task to the file
   for (size_t i = 0; i < tasks.size(); i++) {
@@ -48,10 +49,10 @@ void updateTasksFile() {
     String taskInfo = tasks[i][0] + "|" + tasks[i][1] + "|" + tasks[i][2] + "|" + tasks[i][3];
     
     // Append the task info to the file
-    pocketmage::file::appendToFile("/sys/tasks.txt", taskInfo);
+    SD().appendToFile("/sys/tasks.txt", taskInfo);
   }
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -65,7 +66,7 @@ void addTask(String taskName, String dueDate, String priority, String completed)
 
 void updateTaskArray() {
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
   File file = SD_MMC.open("/sys/tasks.txt", "r"); // Open the text file in read mode
   if (!file) {
@@ -102,7 +103,7 @@ void updateTaskArray() {
 
   file.close();  // Close the file
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -127,10 +128,7 @@ String convertDateFormat(String yyyymmdd) {
 }
 
 void processKB_TASKS() {
-  if (OLEDPowerSave) {
-    u8g2.setPowerSave(0);
-    OLEDPowerSave = false;
-  }
+  OLED().setPowerSave(false);
   int currentMillis = millis();
   disableTimeout = false;
   char inchar;
@@ -321,9 +319,7 @@ void einkHandler_TASKS() {
     case TASKS0:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         display.drawBitmap(0, 0, tasksApp0, 320, 218, GxEPD_BLACK);
@@ -358,9 +354,7 @@ void einkHandler_TASKS() {
       case TASKS0_NEWTASK:
         if (newState) {
           newState = false;
-          display.setRotation(3);
-          display.setFullWindow();
-          display.fillScreen(GxEPD_WHITE);
+          EINK().resetDisplay();
 
           // DRAW APP
           display.drawBitmap(0, 0, tasksApp0, 320, 218, GxEPD_BLACK);
@@ -401,9 +395,7 @@ void einkHandler_TASKS() {
     case TASKS1:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         EINK().drawStatusBar("T:" + tasks[selectedTask][0]);
@@ -415,3 +407,4 @@ void einkHandler_TASKS() {
     
   }
 }
+#endif

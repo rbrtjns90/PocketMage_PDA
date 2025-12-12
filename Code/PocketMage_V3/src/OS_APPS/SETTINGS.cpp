@@ -1,5 +1,6 @@
-#include <globals.h>
 
+#include <globals.h>
+#if !OTA_APP // POCKETMAGE_OS
 enum SettingsState { settings0, settings1 };
 SettingsState CurrentSettingsState = settings0;
 
@@ -19,7 +20,7 @@ void settingCommandSelect(String command) {
 
   if (command.startsWith("timeset ")) {
     String timePart = command.substring(8);
-    pocketmage::time::setTimeFromString(timePart);
+    CLOCK().setTimeFromString(timePart);
     return;
   }
   else if (command.startsWith("dateset ")) {
@@ -287,7 +288,7 @@ void einkHandler_settings() {
     newState = false;
 
     // Load settings
-    pocketmage::power::loadState(false);
+    loadState(false);
     
     // Display Background
     display.fillScreen(GxEPD_WHITE);
@@ -328,3 +329,4 @@ void einkHandler_settings() {
     EINK().multiPassRefresh(2);
   }
 }
+#endif

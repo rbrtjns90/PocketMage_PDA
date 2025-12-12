@@ -1,5 +1,6 @@
-#include <globals.h>
 
+#include <globals.h>
+#if !OTA_APP // POCKETMAGE_OS
 enum LexState {MENU, DEF};
 LexState CurrentLexState = MENU;
 
@@ -21,7 +22,7 @@ void LEXICON_INIT() {
 void loadDefinitions(String word) {
   OLED().oledWord("Loading Definitions");
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   defList.clear();  // Clear previous results
@@ -80,7 +81,7 @@ void loadDefinitions(String word) {
     newState = true;
   }
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -221,8 +222,7 @@ void einkHandler_LEXICON() {
     case MENU:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
+        EINK().resetDisplay(false);
         display.drawBitmap(0, 0, _lex0, 320, 218, GxEPD_BLACK);
 
         EINK().drawStatusBar("Type a Word:");
@@ -258,5 +258,4 @@ void einkHandler_LEXICON() {
   }
   
 }
-
-
+#endif

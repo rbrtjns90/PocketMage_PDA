@@ -2,36 +2,24 @@
 #define GLOBALS_H
 
 // LIBRARIES
-#include <USB.h>
 #include <USBMSC.h>
 #include <SD_MMC.h>
-#include <Preferences.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <pocketmage.h>
-#include <assets.h>
+// OTA_APP: remove assets.h + assets.cpp, and OS_APPS/, follow OTA_APP: tag instructions in codebase
+#include <assets.h> // OTA_APP: remove
 
-// ===================== USB & STORAGE =====================
-// USB mass storage controller
-extern USBMSC msc;           // USB MSC object
-extern sdmmc_card_t* card;   // SD card pointer
 
 // ===================== SYSTEM STATE =====================
-extern Preferences prefs;        // NVS preferences
-extern int OLEDFPSMillis;            // Last OLED FPS update time
-extern int KBBounceMillis;           // Last keyboard debounce time
-extern volatile bool TCA8418_event;  // Keypad interrupt event
-extern volatile bool PWR_BTN_event;  // Power button event
-extern volatile bool newState;       // App state changed
-extern volatile bool OLEDPowerSave;  // OLED power save mode
-extern volatile bool disableTimeout; // Disable timeout globally
-extern bool fileLoaded;
-
-// extern volatile int prevBattState;   // Previous battery state
-extern unsigned int flashMillis;     // Flash timing
-extern int prevTime;                 // Previous time (minutes)
-extern uint8_t prevSec;              // Previous seconds
-extern TaskHandle_t einkHandlerTaskHandle; // E-Ink handler task
+extern Preferences prefs;                       // NVS preferencesv
+extern TaskHandle_t einkHandlerTaskHandle;      // E-Ink handler task
+extern int OLEDFPSMillis;                       // Last OLED FPS update time
+extern int KBBounceMillis;                      // Last keyboard debounce time
+extern volatile bool newState;                  // App state changed
+extern volatile bool disableTimeout;            // Disable timeout globally
+extern bool fileLoaded;     
+extern unsigned int flashMillis;                // Flash timing
 
 extern String OTA1_APP;
 extern String OTA2_APP;
@@ -39,22 +27,43 @@ extern String OTA3_APP;
 extern String OTA4_APP;
 
 // ===================== KEYBOARD STATE =====================
-extern volatile bool SDCARD_INSERT;  // SD card inserted event
-enum KBState { NORMAL, SHIFT, FUNC };    // Keyboard state
+enum KBState { NORMAL, SHIFT, FUNC };           // Keyboard state
 
 // ===================== APP STATES =====================
 enum AppState { HOME, TXT, FILEWIZ, USB_APP, BT, SETTINGS, TASKS, CALENDAR, JOURNAL, LEXICON, APPLOADER };
-extern const String appStateNames[];     // App state names
-extern const unsigned char *appIcons[11]; // App icons
-extern AppState CurrentAppState;         // Current app state
+extern const String appStateNames[];            // App state names
+extern const unsigned char *appIcons[11];       // App icons
+extern AppState CurrentAppState;                // Current app state
 
 // ===================== TASKS APP =====================
-extern std::vector<std::vector<String>> tasks; // Task list
+extern std::vector<std::vector<String>> tasks;  // Task list
 
 // ===================== HOME APP =====================
-enum HOMEState { HOME_HOME, NOWLATER };       // Home app states
-extern HOMEState CurrentHOMEState;            // Current home state
+enum HOMEState { HOME_HOME, NOWLATER };         // Home app states
+extern HOMEState CurrentHOMEState;              // Current home state
 
+// ===================== PocketMage APP PROTOTYPES =====================
+// <APP.cpp>
+void APP_INIT();
+void processKB_APP();
+void einkHandler_APP();
+
+//utils.cpp
+void printDebug();
+void checkTimeout();
+void loadState(bool changeState = true);
+void updateBattState();
+#if !OTA_APP
+void saveEditingFile(); // OTA_APP: Remove saveEditingFile
+#endif
+// <PocketMage>
+void einkHandler(void *parameter);
+void applicationEinkHandler();
+void processKB();
+
+
+// OTA_APP: Remove all pocketmage v3 prototypes below this line
+#if !OTA_APP // POCKETMAGE_OS
 // <FILEWIZ.cpp>
 void FILEWIZ_INIT();
 void processKB_FILEWIZ();
@@ -115,10 +124,5 @@ void processKB_APPLOADER();
 void einkHandler_APPLOADER();
 void rebootToAppSlot(int otaIndex);
 void loadAndDrawAppIcon(int x, int y, int otaIndex, bool showName = true, int maxNameChars = 10);
-
-// <PocketMage>
-void einkHandler(void *parameter); // moved from EinkFunc.cpp
-void applicationEinkHandler();
-void processKB();
-
+#endif // POCKETMAGE_OS
 #endif // GLOBALS_H

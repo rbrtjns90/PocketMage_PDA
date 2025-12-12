@@ -17,37 +17,16 @@ extern bool mscEnabled;
 extern bool sinkEnabled;
 extern volatile bool SDActive;
 extern volatile int battState;       // Battery state
+extern volatile bool PWR_BTN_event;  // Power button event **shared with library**
 
 extern bool rebootToPocketMage();
-// To Do: remove nested namespaces and default to pocketmage::method()
-// maybe: refactor pocketmage to be consistent with hardware classes in library (Pocketmage().method())
-namespace pocketmage{
-  namespace file{
-    void saveFile();
-    void writeMetadata(const String& path);
-    void loadFile(bool showOLED = true);
-    void delFile(String fileName);
-    void deleteMetadata(String path);
-    void renFile(String oldFile, String newFile);
-    void renMetadata(String oldPath, String newPath);
-    void copyFile(String oldFile, String newFile);
-    void appendToFile(String path, String inText);
-  }
 
-  namespace time{
-    void setTimeFromString(String timeStr);
-    void checkTimeout();
-    void setCpuSpeed(int newFreq);
-  }
-  namespace power{
-    void deepSleep(bool alternateScreenSaver = false);
-    void IRAM_ATTR PWR_BTN_irq();
-    void updateBattState();
-    void loadState(bool changeState = true);
-  }
-  namespace debug{
-    void printDebug();
-  }
+namespace pocketmage{
+  void setCpuSpeed(int newFreq);
+  void deepSleep(bool alternateScreenSaver = false);
+  bool setRebootFlagOTA();
+  void checkRebootOTA();
+  void IRAM_ATTR PWR_BTN_irq();
 }
 
 // ===================== SYSTEM SETUP =====================

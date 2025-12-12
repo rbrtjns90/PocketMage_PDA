@@ -1,5 +1,6 @@
-#include <globals.h>
 
+#include <globals.h>
+#if !OTA_APP // POCKETMAGE_OS
 static constexpr const char* TAG = "CALENDAR"; // Tag for all calls to ESP_LOG
 
 enum CalendarState { WEEK, MONTH, NEW_EVENT, VIEW_EVENT, SUN, MON, TUE, WED, THU, FRI, SAT };
@@ -42,7 +43,7 @@ void CALENDAR_INIT() {
 #pragma message "TODO: Migrate to a better/global file management system"
 void updateEventArray() {
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
 
   File file = SD_MMC.open("/sys/events.txt", "r"); // Open the text file in read mode
@@ -83,7 +84,7 @@ void updateEventArray() {
 
   file.close();  // Close the file
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -95,10 +96,10 @@ void sortEventsByDate(std::vector<std::vector<String>> &calendarEvents) {
 
 void updateEventsFile() {
   SDActive = true;
-  setCpuFrequencyMhz(240);
+  pocketmage::setCpuSpeed(240);
   delay(50);
   // Clear the existing calendarEvents file first
-  pocketmage::file::delFile("/sys/events.txt");
+  SD().delFile("/sys/events.txt");
 
   // Iterate through the calendarEvents vector and append each task to the file
   for (size_t i = 0; i < calendarEvents.size(); i++) {
@@ -106,10 +107,10 @@ void updateEventsFile() {
     String eventInfo = calendarEvents[i][0] + "|" + calendarEvents[i][1] + "|" + calendarEvents[i][2] + "|" + calendarEvents[i][3]+ "|" + calendarEvents[i][4]+ "|" + calendarEvents[i][5];
     
     // Append the task info to the file
-    pocketmage::file::appendToFile("/sys/events.txt", eventInfo);
+    SD().appendToFile("/sys/events.txt", eventInfo);
   }
 
-  if (SAVE_POWER) setCpuFrequencyMhz(POWER_SAVE_FREQ);
+  if (SAVE_POWER) pocketmage::setCpuSpeed(POWER_SAVE_FREQ);
   SDActive = false;
 }
 
@@ -1569,9 +1570,7 @@ void einkHandler_CALENDAR() {
     case WEEK:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         drawCalendarWeek(weekOffsetCount);
@@ -1584,9 +1583,7 @@ void einkHandler_CALENDAR() {
     case MONTH:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // DRAW APP
         drawCalendarMonth(monthOffsetCount);
@@ -1599,9 +1596,7 @@ void einkHandler_CALENDAR() {
     case NEW_EVENT:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         display.drawBitmap(0, 0, calendar_allArray[2], 320, 218, GxEPD_BLACK);
 
@@ -1632,9 +1627,7 @@ void einkHandler_CALENDAR() {
     case VIEW_EVENT:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         switch(newEventState) {
           case -1:
@@ -1680,9 +1673,7 @@ void einkHandler_CALENDAR() {
     case SAT:
       if (newState) {
         newState = false;
-        display.setRotation(3);
-        display.setFullWindow();
-        display.fillScreen(GxEPD_WHITE);
+        EINK().resetDisplay();
 
         // Draw background
         // CurrentCalendarState enumerations somehow line up with calendar app bitmaps?
@@ -1731,3 +1722,4 @@ void einkHandler_CALENDAR() {
       break;
   }
 }
+#endif
