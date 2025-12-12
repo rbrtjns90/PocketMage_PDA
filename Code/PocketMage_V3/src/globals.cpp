@@ -33,8 +33,8 @@ bool SHOW_YEAR;           // Show year in clock
 bool SAVE_POWER;          // Enable power saving mode
 bool ALLOW_NO_MICROSD;    // Allow running without SD card
 bool HOME_ON_BOOT;        // Start home app on boot
-int OLED_BRIGHTNESS;      // OLED brightness (0-255)
-int OLED_MAX_FPS;         // OLED max FPS
+int OLED_BRIGHTNESS = 255;  // OLED brightness (0-255)
+int OLED_MAX_FPS = 30;      // OLED max FPS
 
 String OTA1_APP;
 String OTA2_APP;
